@@ -60,6 +60,14 @@ if [ ! -f "$INIT_MARKER" ]; then
     echo "Installing CUDA nvcc..."
     conda install -y -c nvidia cuda-nvcc --override-channels
 
+    # echo "Installing exllamav2"
+    # git clone https://github.com/turboderp/exllamav2
+    # cd exllamav2
+    # pip install -r requirements.txt
+    # pip install .
+
+    # cd ..
+
     echo "Installing dependencies from requirements.txt..."
     pip install --no-cache-dir -r $REPO_DIR/requirements.txt
 

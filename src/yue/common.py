@@ -25,6 +25,7 @@ parser.add_argument("--stage2_cache_size", type=int, default=8192, help="The exl
 parser.add_argument("--stage1_cache_mode", type=str, default="FP16", help="The cache mode used in Stage 1 inference (FP16, Q8, Q6, Q4). Quantized k/v cache will save VRAM at the cost of some speed and precision.")
 parser.add_argument("--stage2_cache_mode", type=str, default="FP16", help="The cache mode used in Stage 2 inference (FP16, Q8, Q6, Q4). Quantized k/v cache will save VRAM at the cost of some speed and precision.")
 parser.add_argument("--stage1_no_guidance", action="store_true", help="Disable classifier-free guidance for stage 1")
+#parser.add_argument("--tokenizer", type=str, default="mm_tokenizer_v0.2_hf/tokenizer.model", help="The model tokenizer path")
 # Prompt
 parser.add_argument(
     "--genre_txt",
@@ -78,6 +79,8 @@ parser.add_argument("--config_path", type=str, default="./xcodec_mini_infer/deco
 parser.add_argument("--vocal_decoder_path", type=str, default="./xcodec_mini_infer/decoders/decoder_131000.pth", help="Path to Vocos decoder weights.")
 parser.add_argument("--inst_decoder_path", type=str, default="./xcodec_mini_infer/decoders/decoder_151000.pth", help="Path to Vocos decoder weights.")
 parser.add_argument("-r", "--rescale", action="store_true", help="Rescale output to avoid clipping.")
+parser.add_argument("--custom_filename", type=str, default="", help="The custom filename to use for the output files.")
+
 
 
 def seed_everything(seed: int = 42):

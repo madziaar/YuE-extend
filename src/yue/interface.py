@@ -233,6 +233,7 @@ def generate_song(
     prompt_end_time_2,
     disable_offload_model,
     keep_intermediate,
+    custom_filename
     # use_mmgp,
     # mmgp_profile,
     # use_sdpa,
@@ -283,12 +284,12 @@ def generate_song(
         "python", "-u", f"{BASE_YUE_DIR}/infer.py",  # Added '-u' here
         "--stage1_use_exl2",
         "--stage2_use_exl2",
-        "--stage2_cache_size 32768"
+        "--stage2_cache_size 32768",
         "--stage1_model", f"'{stage1_model}'",
         # "--quantization_stage1", f"{stage1_model_quantization}",
         "--stage2_model", f"'{stage2_model}'",
         # "--quantization_stage2", f"{stage2_model_quantization}",
-        "--tokenizer", f"'{tokenizer_model}'",
+        #"--tokenizer", f"'{tokenizer_model}'",
         "--genre_txt", f"'{genre_txt_path}'",
         "--lyrics_txt", f"'{lyrics_txt_path}'",
         "--run_n_segments", str(run_n_segments),
@@ -303,6 +304,9 @@ def generate_song(
         "--vocal_decoder_path", f"'{BASE_YUE_DIR}/xcodec_mini_infer/decoders/decoder_131000.pth'",
         "--inst_decoder_path", f"'{BASE_YUE_DIR}/xcodec_mini_infer/decoders/decoder_151000.pth'"
     ]
+    
+    if custom_filename.strip():
+        cmd.append(f"--custom_filename '{custom_filename}'")
     
     if use_audio_prompt and saved_audio_path:
         cmd += [
@@ -418,10 +422,13 @@ def build_gradio_interface():
                 value=get_quantization_type(DEFAULT_STAGE2_MODEL),
                 interactive=True
             )
+            
+            # TODO: remove the tokenizer model
             tokenizer_model = gr.Textbox(
                 label="Tokenizer Model",
                 value=TOKENIZER_MODEL,
-                info="Path to the model tokenizer."
+                info="Path to the model tokenizer.",
+                visible=False
             )
             # gr.Markdown("#### Optimizations using MMGP (Memory Management for the GPU Poor) by DeepBeepMeep")
             # with gr.Row():
@@ -695,7 +702,11 @@ Note:
                 info="Seed for random number generation."
             )
 
-           
+            custom_filename = gr.Textbox(
+                label="Custom Save Filename",
+                value="",
+                info="Custom filename for the generated output."
+            )
 
             generate_button = gr.Button("Generate Music")
             stop_button = gr.Button("Stop", visible=False)
@@ -781,6 +792,7 @@ Note:
             prompt_end_time_2,
             disable_offload_model,
             keep_intermediate,
+            custom_filename
             # use_mmgp,
             # mmgp_profile,
             # use_sdpa,
@@ -833,6 +845,7 @@ Note:
                 prompt_end_time_2,
                 disable_offload_model,
                 keep_intermediate,
+                custom_filename
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,
@@ -872,6 +885,7 @@ Note:
                 prompt_end_time_2,
                 disable_offload_model,
                 keep_intermediate,
+                custom_filename
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,

@@ -22,6 +22,7 @@ RUN apt-get update -y && \
     apt-get install -y wget bzip2 ca-certificates git curl && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    ninja-build \
     ca-certificates \
     cmake \
     curl \
@@ -48,6 +49,12 @@ RUN apt-get update -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+
+ENV CUDA_HOME=/usr/local/cuda
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+ENV PATH="/opt/conda/envs/pyenv/bin:$PATH"
+
+
 # Download and install Miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p $CONDA_DIR && \
@@ -69,6 +76,9 @@ RUN $CONDA_DIR/bin/conda run -n pyenv \
 
 RUN $CONDA_DIR/bin/conda install -n pyenv nvidia/label/cuda-12.4.1::cuda-nvcc
 
+RUN $CONDA_DIR/bin/conda run -n pyenv pip install setuptools
+COPY exllamav2-0.2.7+cu121.torch2.5.0-cp312-cp312-linux_x86_64.whl .
+RUN $CONDA_DIR/bin/conda run -n pyenv pip install exllamav2-0.2.7+cu121.torch2.5.0-cp312-cp312-linux_x86_64.whl
 
 # Install git lfs
 RUN apt-get update && apt-get install -y git-lfs && git lfs install

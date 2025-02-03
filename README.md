@@ -1,331 +1,278 @@
-# YuE-exllamav2
+# YuE-Exllamav2-UI
 
-Optimized implementation of [multimodal-art-projection/YuE](https://github.com/multimodal-art-projection/YuE) in exllamav2.
+Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music generation using YuE models with **ExLlamaV2 acceleration**. This project delivers the best possible performance for YuE models, achieving exceptional speed and efficiency on modern NVIDIA GPUs like the RTX 4090 and RTX 3060.
 
-## Benchmark
-### Inference time on RTX 4090 24gb:
-- bf16 model, Flash Attention 2 enabled, CFG enabled
-- default example prompt for genre and lyrics
-- 2 segments in length
-- default batch size 4 was used during stage 2 inference with the original pipeline, and cache size was set to 64k for exllamav2
+> **Note**: This project is a performance-optimized fork of the official [YuE repository](https://github.com/multimodal-art-projection/YuE). For more details about the model and its architecture, please refer to the original repository.
 
-| Stage  | Original           | Exllamav2          |
-| ------ | ------------------ | ------------------ |
-|    1   |        282s        |        125s        |
-|    2   |        666s        |         49s        |
-| Total  |        948s        |        174s        |
-
-On this hardware configuration, this implmentation achieves over 500% end-to-end speedup over baseline. There may be some variance in results due to track length variability between generations, although during this test there was only a 3 second difference in track length (0:58 vs 0:55).
-
-### Inference time on RTX 3060 mobile 6gb:
-
-Quantized models are available for inference with lower VRAM usage: [Stage 1](https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2) [Stage 2](https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2)
-
-- 4.25bpw-h6 stage 1 with Q4 cache
-- 8.0bpw-h8 stage 2 with Q8 cache
-- Flash Attention 2 enabled, CFG enabled
-- default example prompt for genre and lyrics
-- 2 segments in length
-
-| Stage  | Original           | Exllamav2          |
-| ------ | ------------------ | ------------------ |
-|    1   |        OOM         |        317s        |
-|    2   |        OOM         |        350s        |
-| Total  |        OOM         |        667s        |
-
-This produces a coherent result despite aggressive quantization, although there are no metrics for now to measure quality loss.
-
-## Usage
-
-### 1. Install environment and dependencies
-```bash
-# We recommend using conda to create a new environment.
-conda create -n yue python=3.12 # Python >=3.12 is recommended.
-conda activate yue
-```
-
-### 1.1 Install exllamav2
-```bash
-# Refer to https://github.com/turboderp-org/exllamav2?tab=readme-ov-file#installation
-# Note installing from pypi uses JIT version and requires nvcc+compiler
-pip install exllamav2
-```
-
-### 2. Download the infer code and tokenizer
-```bash
-# Make sure you have git-lfs installed (https://git-lfs.com)
-# if you don't have root, see https://github.com/git-lfs/git-lfs/issues/4134#issuecomment-1635204943
-sudo apt update
-sudo apt install git-lfs
-git lfs install
-git clone https://github.com/sgsdxzy/YuE-exllamav2.git
-cd YuE-exllamav2
-pip install -r requirements.txt
-cd src/yue
-git clone https://huggingface.co/m-a-p/xcodec_mini_infer
-```
-
-### 3. Run the inference
-```bash
-python src/yue/infer.py --stage1_use_exl2 --stage2_use_exl2 --stage2_cache_size 32768 [original args]
-```
-
-
-## Original README of multimodal-art-projection/YuE
-<p align="center">
-    <img src="./assets/logo/白底.png" width="400" />
-</p>
-
-<p align="center">
-    <a href="https://map-yue.github.io/">Demo 🎶</a> &nbsp;|&nbsp; 📑 <a href="">Paper (coming soon)</a>
-    <br>
-    <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-cot">YuE-s1-7B-anneal-en-cot 🤗</a> &nbsp;|&nbsp; <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-icl">YuE-s1-7B-anneal-en-icl 🤗</a> &nbsp;|&nbsp; <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-jp-kr-cot">YuE-s1-7B-anneal-jp-kr-cot 🤗</a>
-    <br>
-    <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-jp-kr-icl">YuE-s1-7B-anneal-jp-kr-icl 🤗</a> &nbsp;|&nbsp; <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-zh-cot">YuE-s1-7B-anneal-zh-cot 🤗</a> &nbsp;|&nbsp; <a href="https://huggingface.co/m-a-p/YuE-s1-7B-anneal-zh-icl">YuE-s1-7B-anneal-zh-icl 🤗</a>
-    <br>
-    <a href="https://huggingface.co/m-a-p/YuE-s2-1B-general">YuE-s2-1B-general 🤗</a> &nbsp;|&nbsp; <a href="https://huggingface.co/m-a-p/YuE-upsampler">YuE-upsampler 🤗</a>
-</p>
+![Gradio Interface Preview](/preview.png)
 
 ---
-Our model's name is **YuE (乐)**. In Chinese, the word means "music" and "happiness." Some of you may find words that start with Yu hard to pronounce. If so, you can just call it "yeah." We wrote a song with our model's name, see [here](assets/logo/yue.mp3).
 
-YuE is a groundbreaking series of open-source foundation models designed for music generation, specifically for transforming lyrics into full songs (lyrics2song). It can generate a complete song, lasting several minutes, that includes both a catchy vocal track and accompaniment track. YuE is capable of modeling diverse genres/languages/vocal techniques. Please visit the [**Demo Page**](https://map-yue.github.io/) for amazing vocal performance.
+## Key Features
+
+- **ExLlamaV2 Optimization**: Inference acceleration with **Flash Attention 2** and **BF16 support**.
+- **Exceptional Performance**: Up to **500% speedup** compared to the original implementation.
+- **NVIDIA GPU Support**: Compatible with CUDA 12.2 and optimized for modern GPUs.
+- **User-Friendly Interface**: Web-based Gradio interface for easy configuration and music generation.
+- **Audio Playback and Download**: Listen to generated audio and download it directly from the interface.
+- **Pre-configured Docker**: Easy deployment with Docker and support for persistent volumes.
+
+---
 
 ## News and Updates
 
-* **2025.01.30 🔥 Inference Update**: We now support dual-track ICL mode! You can prompt the model with a reference song, and it will generate a new song in a similar style (voice cloning, music style transfer, etc.). Try it out! See [demo video by @abrakjamson on X](https://x.com/abrakjamson/status/1885932885406093538). 🔥🔥🔥
 
-* **2025.01.30 🔥 Announcement: A New Era Under Apache 2.0 🔥**: We are thrilled to announce that, in response to overwhelming requests from our community, **YuE** is now officially licensed under the **Apache 2.0** license. We sincerely hope this marks a watershed moment—akin to what Stable Diffusion and LLaMA have achieved in their respective fields—for music generation and creative AI. 🎉🎉🎉
+> **Note**: Keep an eye on updates to know when you need to do a docker pull alissonpereiraanjos/yue-interface:latest
 
-* **2025.01.29 🎉**: We have updated the license description. we **ENCOURAGE** artists and content creators to sample and incorporate outputs generated by our model into their own works, and even monetize them. The only requirement is to credit our name: **YuE by HKUST/M-A-P** (alphabetic order).
-* **2025.01.28 🫶**: Thanks to Fahd for creating a tutorial on how to quickly get started with YuE. Here is his [demonstration](https://www.youtube.com/watch?v=RSMNH9GitbA).
-* **2025.01.26 🔥**: We have released the **YuE** series.
+* **2025.02.03 🔥**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
+* **2025.02.01 (Oficial Repository) 🧑🏻‍💻 Inference Update**: 1. Support dual-track ICL mode. 2. Fix "instrumental" naming bug in output files. 3. Support seeding. 
+* **2025.01.31 🔥**: Added possibility to select existing models using a dropdown, added Refresh File Explorer button and Warnings are ignored in the log.
+- **2025.01.30 🔥**: Initial release with BF16 model support.
 
-<br>
-
----
-## TODOs📋
-- [ ] Example finetune code for enabling BPM control using 🤗 Transformers.
-- [ ] Support stemgen mode https://github.com/multimodal-art-projection/YuE/issues/21
-- [ ] Support llama.cpp https://github.com/ggerganov/llama.cpp/issues/11467
-- [ ] Support gradio interface. https://github.com/multimodal-art-projection/YuE/issues/1
-- [ ] Online serving on huggingface space.
-- [ ] Support transformers tensor parallel. https://github.com/multimodal-art-projection/YuE/issues/7
-- [x] Support dual-track ICL mode.
-- [x] Fix "instrumental" naming bug in output files. https://github.com/multimodal-art-projection/YuE/pull/26
-- [x] Support seeding https://github.com/multimodal-art-projection/YuE/issues/20
 
 ---
 
-## Hardware and Performance
+## Performance Benchmarks
 
-### **GPU Memory**
-YuE requires significant GPU memory for generating long sequences. Below are the recommended configurations:
+### RTX 4090 24GB
+| Stage         | Original | ExLlamaV2 | Speedup |
+|---------------|----------|-----------|---------|
+| Stage 1       | 282s     | 125s      | 2.25x   |
+| Stage 2       | 666s     | 49s       | 13.6x   |
+| **Total**     | 948s     | 174s      | **5.45x** |
 
-- **For GPUs with 24GB memory or less**: Run **up to 2 sessions** concurrently to avoid out-of-memory (OOM) errors. You could try this [YuEGP](https://github.com/deepbeepmeep/YuEGP) to see if it helps reduce VRAM usage or improve speed.
-- **For full song generation** (many sessions, e.g., 4 or more): Use **GPUs with at least 80GB memory**. i.e. H800, A100, or multiple RTX4090s with tensor parallel.
+*Configuration: BF16 models, Flash Attention 2 enabled, CFG enabled, batch size 4, 64k cache.*
 
-To customize the number of sessions, the interface allows you to specify the desired session count. By default, the model runs **2 sessions** (1 verse + 1 chorus) to avoid OOM issue.
+### RTX 3060 Mobile 6GB
+| Stage         | ExLlamaV2 |
+|---------------|-----------|
+| Stage 1       | 317s      |
+| Stage 2       | 350s      |
+| **Total**     | 667s      |
 
-### **Execution Time**
-On an **H800 GPU**, generating 30s audio takes **150 seconds**.
-On an **RTX 4090 GPU**, generating 30s audio takes approximately **360 seconds**. 
+*Configuration: Quantized models with Q4/Q8 cache, Flash Attention 2 enabled.*
 
 ---
 
-## Quickstart
-Quick start **VIDEO TUTORIAL** by Fahd: [Link here](https://www.youtube.com/watch?v=RSMNH9GitbA). We recommend watching this video if you are not familiar with machine learning or the command line.
+## How to Use
 
-### 1. Install environment and dependencies
-Make sure properly install flash attention 2 to reduce VRAM usage. 
-```bash
-# We recommend using conda to create a new environment.
-conda create -n yue python=3.8 # Python >=3.8 is recommended.
-conda activate yue
-# install cuda >= 11.8
-conda install pytorch torchvision torchaudio cudatoolkit=11.8 -c pytorch -c nvidia
-pip install -r <(curl -sSL https://raw.githubusercontent.com/multimodal-art-projection/YuE/main/requirements.txt)
+### Prerequisites
 
-# For saving GPU memory, FlashAttention 2 is mandatory. 
-# Without it, long audio may lead to out-of-memory (OOM) errors.
-# Be careful about matching the cuda version and flash-attn version
-pip install flash-attn --no-build-isolation
+### Docker
+
+Ensure you have Docker installed on your system. Follow the official Docker installation guides for your platform:
+
+- [Install Docker on Windows](https://docs.docker.com/desktop/windows/install/)
+- [Install Docker on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+
+### NVIDIA GPU Support
+
+This interface **requires NVIDIA GPUs** for acceleration. Ensure you have the necessary hardware and drivers set up.
+
+1. **Linux**:
+   - Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+   - Ensure your NVIDIA drivers are properly installed and up to date.
+
+2. **Windows/macOS**:
+   - Refer to the respective Docker and NVIDIA documentation for GPU passthrough (e.g., WSL2 on Windows).
+   - **Note**: GPU support is mandatory. Without compatible NVIDIA GPUs, the container will not function correctly.
+
+### Docker Compose
+
+To simplify the setup and management of the YuE-Exllamav2-UI, you can use Docker Compose. Docker Compose allows you to define and run multi-container Docker applications with a single configuration file (`docker-compose.yml`). Below are the steps to get started.
+
+> **Note**: This **docker-compose.yml** file already exists in the root of the repository, you just need to download or copy the file and replace the directory mapping and run the command in the same directory as the file, see the explanation below.
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  yue-exllamav2:
+    image: alissonpereiraanjos/yue-exllamav2-interface:latest
+    container_name: yue-exllamav2
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      - DOWNLOAD_MODELS=all_bf16
+    volumes:
+      - /path/to/models:/workspace/models
+      - /path/to/outputs:/workspace/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
 ```
 
-### 2. Download the infer code and tokenizer
-```bash
-# Make sure you have git-lfs installed (https://git-lfs.com)
-# if you don't have root, see https://github.com/git-lfs/git-lfs/issues/4134#issuecomment-1635204943
-sudo apt update
-sudo apt install git-lfs
-git lfs install
-git clone https://github.com/multimodal-art-projection/YuE.git
-
-cd YuE/inference/
-git clone https://huggingface.co/m-a-p/xcodec_mini_infer
-```
-
-### 3. Run the inference
-Now generate music with **YuE** using 🤗 Transformers. Make sure your step [1](#1-install-environment-and-dependencies) and [2](#2-download-the-infer-code-and-tokenizer) are properly set up. 
-
-Note:
-- Set `--run_n_segments` to the number of lyric sections if you want to generate a full song. Additionally, you can increase `--stage2_batch_size` based on your available GPU memory.
-
-- You may customize the prompt in `genre.txt` and `lyrics.txt`. See prompt engineering guide [here](#prompt-engineering-guide).
-
-- You can increase `--stage2_batch_size` to speed up the inference, but be careful for OOM.
-
-- LM ckpts will be automatically downloaded from huggingface. 
-
+Run the container:
 
 ```bash
-# This is the CoT mode.
-cd YuE/inference/
-python infer.py \
-    --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-cot \
-    --stage2_model m-a-p/YuE-s2-1B-general \
-    --genre_txt ../prompt_egs/genre.txt \
-    --lyrics_txt ../prompt_egs/lyrics.txt \
-    --run_n_segments 2 \
-    --stage2_batch_size 4 \
-    --output_dir ../output \
-    --max_new_tokens 3000
+docker-compose up -d
 ```
 
-We also support music in-context-learning (provide a reference song), there are 2 types: single-track (mix/vocal/instrumental) and dual-track. 
+**Access the Interface**: Once the container is running, access the Gradio UI at `http://localhost:7860`.
 
-Note: 
-- ICL requires a different ckpt, e.g. `m-a-p/YuE-s1-7B-anneal-en-icl`.
+### Explanation of the Configuration
 
-- Music ICL generally requires a 30s audio segment. The model will write new songs with similar style of the provided audio, and may improve musicality.
+- **`image`**: Specifies the Docker image to use (`alissonpereiraanjos/yue-exllamav2-interface:latest`).
+- **`container_name`**: Sets a name for the container (`yue-interface`).
+- **`restart: unless-stopped`**: Ensures the container restarts automatically unless manually stopped.
+- **`ports`**: Maps container ports to the host:
+  - `7860:7860`: Port for accessing the Gradio UI.
+  - `8888:8888`: Optional additional port (JupyterLab).
+- **`environment`**: Defines environment variables:
+  - `DOWNLOAD_MODELS=all`: Downloads all available models. Replace `all` with specific model keys (e.g., `YuE-s2-1B-general,YuE-s1-7B-anneal-en-cot`) to download only selected models.
+- **`volumes`**: Maps host directories to the container:
+  - `/path/to/models:/workspace/models`: Directory where models will be stored.
+  - `/path/to/outputs:/workspace/outputs`: Directory where generated outputs will be saved.
+  - Replace `/path/to/models` and `/path/to/outputs` with the actual paths on your system.
+- **`deploy.resources.reservations.devices`**: Enables GPU support in the container (requires NVIDIA GPU and drivers).
 
-- Dual-track ICL works better in general, requiring both vocal and instrumental tracks.
+### Customization
 
-- For single-track ICL, you can provide a mix, vocal, or instrumental track.
+- **Specific models**: To download only specific models, modify the `DOWNLOAD_MODELS` environment variable in the `docker-compose.yml` file. For example:
 
-- You can separate the vocal and instrumental tracks using [python-audio-separator](https://github.com/nomadkaraoke/python-audio-separator) or [Ultimate Vocal Remover GUI](https://github.com/Anjok07/ultimatevocalremovergui).
+  ```yaml
+  environment:
+    - DOWNLOAD_MODELS=YuE-s2-1B-general,YuE-s1-7B-anneal-en-cot
+  ```
 
-```bash
-# This is the dual-track ICL mode.
-# To turn on dual-track mode, enable `--use_dual_tracks_prompt`
-# and provide `--vocal_track_prompt_path`, `--instrumental_track_prompt_path`, 
-# `--prompt_start_time`, and `--prompt_end_time`
-# The ref audio is taken from GTZAN test set.
-cd YuE/inference/
-python infer.py \
-    --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-icl \
-    --stage2_model m-a-p/YuE-s2-1B-general \
-    --genre_txt ../prompt_egs/genre.txt \
-    --lyrics_txt ../prompt_egs/lyrics.txt \
-    --run_n_segments 2 \
-    --stage2_batch_size 4 \
-    --output_dir ../output \
-    --max_new_tokens 3000 \
-    --use_dual_tracks_prompt \
-    --vocal_track_prompt_path ../prompt_egs/pop.00001.Vocals.mp3 \
-    --instrumental_track_prompt_path ../prompt_egs/pop.00001.Instrumental.mp3 \
-    --prompt_start_time 0 \
-    --prompt_end_time 30 
-```
-
-```bash
-# This is the single-track (mix/vocal/instrumental) ICL mode.
-# To turn on single-track ICL, enable `--use_audio_prompt`, 
-# and provide `--audio_prompt_path` , `--prompt_start_time`, and `--prompt_end_time`. 
-# The ref audio is taken from GTZAN test set.
-cd YuE/inference/
-python infer.py \
-    --cuda_idx 0 \
-    --stage1_model m-a-p/YuE-s1-7B-anneal-en-icl \
-    --stage2_model m-a-p/YuE-s2-1B-general \
-    --genre_txt ../prompt_egs/genre.txt \
-    --lyrics_txt ../prompt_egs/lyrics.txt \
-    --run_n_segments 2 \
-    --stage2_batch_size 4 \
-    --output_dir ../output \
-    --max_new_tokens 3000 \
-    --use_audio_prompt \
-    --audio_prompt_path ../prompt_egs/pop.00001.mp3 \
-    --prompt_start_time 0 \
-    --prompt_end_time 30 
-```
+- **Different ports**: If you need to use different ports, adjust the port mappings under the `ports` section.
 ---
- 
-## Prompt Engineering Guide
-The prompt consists of three parts: genre tags, lyrics, and ref audio.
 
-### Genre Tagging Prompt
-1. An example genre tagging prompt can be found [here](prompt_egs/genre.txt).
+### Direct Docker Run
 
-2. A stable tagging prompt usually consists of five components: genre, instrument, mood, gender, and timbre. All five should be included if possible, separated by space (space delimiter).
+To run without Docker Compose:
 
-3. Although our tags have an open vocabulary, we have provided the top 200 most commonly used [tags](./top_200_tags.json). It is recommended to select tags from this list for more stable results.
+```bash
+docker run --gpus all -d \
+  -p 7860:7860 \
+  -e DOWNLOAD_MODELS=all_bf16 \
+  -v /path/to/models:/workspace/models \
+  -v /path/to/outputs:/workspace/outputs \
+  alissonpereiraanjos/yue-exllamav2-interface:latest
+```
 
-3. The order of the tags is flexible. For example, a stable genre tagging prompt might look like: "inspiring female uplifting pop airy vocal electronic bright vocal vocal."
+- `--gpus all`: Enables NVIDIA GPU support.
+- `-d`: Runs the container in detached mode (background).
+- `-p 7860:7860`: Exposes port `7860` for accessing the Gradio UI at [http://localhost:7860](http://localhost:7860).
+- `-p 8888:8888`: Exposes port `8888` for additional services if applicable.
+- `-e DOWNLOAD_MODELS=all_bf16`: Downloads all bf16 available models upon initialization.
 
-4. Additionally, we have introduced the "Mandarin" and "Cantonese" tags to distinguish between Mandarin and Cantonese, as their lyrics often share similarities.
+## Environment Variables
 
-### Lyrics Prompt
-1. An example lyric prompt can be found [here](prompt_egs/lyrics.txt).
+- **DOWNLOAD_MODELS**: Determines which models to download.
+  - Set to `all_bf16` to download all available models (BF16).
+  - Alternatively, specify a comma-separated list of model keys to download specific models (e.g., `DOWNLOAD_MODELS=YuE-s2-1B-general,YuE-s1-7B-anneal-en-cot`).
 
-2. We support multiple languages, including but not limited to English, Mandarin Chinese, Cantonese, Japanese, and Korean. The default top language distribution during the annealing phase is revealed in [issue 12](https://github.com/multimodal-art-projection/YuE/issues/12#issuecomment-2620845772). A language ID on a specific annealing checkpoint indicates that we have adjusted the mixing ratio to enhance support for that language.
-
-3. The lyrics prompt should be divided into sessions, with structure labels (e.g., [verse], [chorus], [bridge], [outro]) prepended. Each session should be separated by 2 newline character "\n\n".
-
-4. **DONOT** put too many words in a single segment, since each session is around 30s (`--max_new_tokens 3000` by default).
-
-5. We find that [intro] label is less stable, so we recommend starting with [verse] or [chorus].
-
-6. For generating music with no vocal, see [issue 18](https://github.com/multimodal-art-projection/YuE/issues/18).
-
-
-### Audio Prompt
-
-1. Audio prompt is optional. Providing ref audio for ICL usually increase the good case rate, and result in less diversity since the generated token space is bounded by the ref audio. CoT only (no ref) will result in a more diverse output.
-
-2. We find that dual-track ICL mode gives the best musicality and prompt following. 
-
-3. Use the chorus part of the music as prompt will result in better musicality.
-
-4. Around 30s audio is recommended for ICL.
 
 ---
 
-## License Agreement \& Disclaimer  
-- The YuE model (including its weights) is now released under the **Apache License, Version 2.0**. We do not make any profit from this model, and we hope it can be used for the betterment of human creativity.
-- **Use & Attribution**: 
-    - We encourage artists and content creators to freely incorporate outputs generated by YuE into their own works, including commercial projects. 
-    - We encourage attribution to the model’s name (“YuE by HKUST/M-A-P”), especially for public and commercial use. 
-- **Originality & Plagiarism**: It is the sole responsibility of creators to ensure that their works, derived from or inspired by YuE outputs, do not plagiarize or unlawfully reproduce existing material. We strongly urge users to perform their own due diligence to avoid copyright infringement or other legal violations.
-- **Recommended Labeling**: When uploading works to streaming platforms or sharing them publicly, we **recommend** labeling them with terms such as: “AI-generated”, “YuE-generated", “AI-assisted” or “AI-auxiliated”. This helps maintain transparency about the creative process.
-- **Disclaimer of Liability**: 
-    - We do not assume any responsibility for the misuse of this model, including (but not limited to) illegal, malicious, or unethical activities. 
-    - Users are solely responsible for any content generated using the YuE model and for any consequences arising from its use. 
-    - By using this model, you agree that you understand and comply with all applicable laws and regulations regarding your generated content.
+## Supported Models
+
+| Model Key                         | Model HF Repository                             | Container Path                                      | Quantization |
+|-----------------------------------|----------------------------------------------|----------------------------------------------------|--------------|
+| `xcodec_mini_infer`               | [`m-a-p/xcodec_mini_infer`](https://huggingface.co/m-a-p/xcodec_mini_infer) | `/workspace/YuE-Interface/inference/xcodec_mini_infer` | N/A          |
+| `YuE-s1-7B-anneal-en-cot`         | [`m-a-p/YuE-s1-7B-anneal-en-cot`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-cot) | `/workspace/models/YuE-s1-7B-anneal-en-cot`       | BF16         |
+| `YuE-s1-7B-anneal-en-icl`         | [`m-a-p/YuE-s1-7B-anneal-en-icl`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-icl) | `/workspace/models/YuE-s1-7B-anneal-en-icl`       | BF16         |
+| `YuE-s1-7B-anneal-jp-kr-cot`      | [`m-a-p/YuE-s1-7B-anneal-jp-kr-cot`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-jp-kr-cot) | `/workspace/models/YuE-s1-7B-anneal-jp-kr-cot`    | BF16         |
+| `YuE-s1-7B-anneal-jp-kr-icl`      | [`m-a-p/YuE-s1-7B-anneal-jp-kr-icl`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-jp-kr-icl) | `/workspace/models/YuE-s1-7B-anneal-jp-kr-icl`    | BF16         |
+| `YuE-s1-7B-anneal-zh-cot`         | [`m-a-p/YuE-s1-7B-anneal-zh-cot`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-zh-cot) | `/workspace/models/YuE-s1-7B-anneal-zh-cot`       | BF16         |
+| `YuE-s1-7B-anneal-zh-icl`         | [`m-a-p/YuE-s1-7B-anneal-zh-icl`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-zh-icl) | `/workspace/models/YuE-s1-7B-anneal-zh-icl`       | BF16         |
+| `YuE-s2-1B-general`               | [`m-a-p/YuE-s2-1B-general`](https://huggingface.co/m-a-p/YuE-s2-1B-general) | `/workspace/models/YuE-s2-1B-general`             | BF16         |
+| `YuE-upsampler`                   | [`m-a-p/YuE-upsampler`](https://huggingface.co/m-a-p/YuE-upsampler) | `/workspace/models/YuE-upsampler`                 | BF16         |
 
 ---
+
+### Mapping Directories for Models and Output
+
+You can mount host directories to store models and outputs outside the container:
+
+```bash
+docker run --gpus all -it \
+  -v /path/to/models:/workspace/models \
+  -v /path/to/outputs:/workspace/outputs \
+  -p 7860:7860 \
+  -p 8888:8888 \
+  -e DOWNLOAD_MODELS=false \
+  alissonpereiraanjos/yue-exllamav2-interface:latest
+```
+
+- `-v /path/to/models:/workspace/models`: Mounts the host's `/path/to/models` directory to `/workspace/models` inside the container.
+- `-v /path/to/outputs:/workspace/outputs`: Mounts the host's `/path/to/outputs` directory to `/workspace/outputs` inside the container.
+- `-e DOWNLOAD_MODELS=false`: Skips automatic model downloads (useful if models are already present in the mounted directories).
+
+## RunPod Deployment
+
+If you prefer to use **RunPod**, you can quickly deploy an instance based on this image by using the following template link:
+
+[**Deploy on RunPod**](https://runpod.io/console/deploy?template=nah47krmt0&ref=8t518hht)
+
+This link directs you to the RunPod console, allowing you to set up a machine directly with the YuE Interface image. Configure your GPU, volume mounts, and environment variables as needed.
+
+**Tip**: If you generate music frequently, consider creating a **Network Volume** in RunPod. This allows you to store models and data persistently, avoiding repeated downloads and saving time.
+
+**Recommended Settings:**
+- GPU: RTX 4090 or A100
+- Network Volume: Minimum 100GB for model storage
+- Environment Variables: `DOWNLOAD_MODELS=all_bf16`
+
+## Update Docker Image (Important)
+
+To update the Docker image with the latest changes, run:
+
+```bash
+docker pull alissonpereiraanjos/yue-exllamav2-interface:latest
+```
+
+**Note**: Always update the image before running the container to ensure you have the latest features and fixes. This is especially important when deploying on RunPod, as it pulls the latest image upon creating a new pod.
+
+### Model Suffixes Explained
+
+The suffixes in the model keys indicate specific training or optimization techniques applied to the models:
+
+| Suffix | Meaning               | Description                                                                                     |
+|--------|-----------------------|-------------------------------------------------------------------------------------------------|
+| `COT`  | **Chain-of-Thought**  | Models trained with *Chain-of-Thought* to enhance reasoning and logical generation capabilities.|
+| `ICL`  | **In-Context Learning** | Models optimized for *In-Context Learning*, allowing dynamic adaptation based on the provided context.|
+
+**Examples:**
+
+- `YuE-s1-7B-anneal-en-cot`: A model trained with *Chain-of-Thought* techniques.
+- `YuE-s1-7B-anneal-en-icl`: A model optimized for *In-Context Learning*.
 
 ## Acknowledgements
-The project is co-lead by HKUST and M-A-P (alphabetic order). Also thanks moonshot.ai, bytedance, 01.ai, and geely for supporting the project.
-A friendly link to HKUST Audio group's [huggingface space](https://huggingface.co/HKUSTAudio). 
 
-We deeply appreciate all the support we received along the way. Long live open-source AI!
+A special thanks to the [YuE-exllamav2](https://github.com/sgsdxzy/YuE-exllamav2) repository for their incredible optimization work, which made this project possible.
+
+---
+
+## Support
+
+For technical support or questions:
+- [GitHub Issues](https://github.com/alissonpereiraanjos/YuE-Exllamav2-UI/issues)
+- [CivitAI Profile](https://civitai.com/user/alissonerdx)
 
 ---
 
 ## Citation
 
-If you find our paper and code useful in your research, please consider giving a star :star: and citation :pencil: :)
+If you use this project in your research, please consider citing:
 
-```BibTeX
+```bibtex
 @misc{yuan2025yue,
   title={YuE: Open Music Foundation Models for Full-Song Generation},
-  author={Ruibin Yuan and Hanfeng Lin and Shawn Guo and Ge Zhang and Jiahao Pan and Yongyi Zang and Haohe Liu and Xingjian Du and Xeron Du and Zhen Ye and Tianyu Zheng and Yinghao Ma and Minghao Liu and Lijun Yu and Zeyue Tian and Ziya Zhou and Liumeng Xue and Xingwei Qu and Yizhi Li and Tianhao Shen and Ziyang Ma and Shangda Wu and Jun Zhan and Chunhui Wang and Yatian Wang and Xiaohuan Zhou and Xiaowei Chi and Xinyue Zhang and Zhenzhu Yang and Yiming Liang and Xiangzhou Wang and Shansong Liu and Lingrui Mei and Peng Li and Yong Chen and Chenghua Lin and Xie Chen and Gus Xia and Zhaoxiang Zhang and Chao Zhang and Wenhu Chen and Xinyu Zhou and Xipeng Qiu and Roger Dannenberg and Jiaheng Liu and Jian Yang and Stephen Huang and Wei Xue and Xu Tan and Yike Guo}, 
-  howpublished={\url{https://github.com/multimodal-art-projection/YuE}},
+  author={Ruibin Yuan et al.},
   year={2025},
-  note={GitHub repository}
+  howpublished={\url{https://github.com/multimodal-art-projection/YuE}}
 }
 ```
-<br>
+
+---
+
+**Experience music generation with accelerated performance!** 🎵🚀
+
+---

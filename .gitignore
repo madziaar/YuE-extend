@@ -163,3 +163,5 @@ cython_debug/
 
 output
 src/yue/xcodec_mini_infer
+
+*.whl
