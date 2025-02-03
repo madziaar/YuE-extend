@@ -134,6 +134,18 @@ function createLink() {
 }
 """
 
+
+custom_log_box_css = """
+#log_box textarea {
+    overflow-y: scroll;
+    max-height: 400px;  /* Set a max height for the log box */
+    white-space: pre-wrap;  /* Preserve line breaks and white spaces */
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-family: monospace;
+    scrollbar-width: thin!important;
+}"""
+
 def get_selected_file(file_paths):
     """
     Handles file selection and prepares it for download.
@@ -390,7 +402,7 @@ def update_logs(current_logs):
 
 def build_gradio_interface():
     theme = gr.themes.Base()
-    with gr.Blocks(title="YuE Exllamav2: Open Full-song Generation Foundation Model", theme=theme) as demo:
+    with gr.Blocks(title="YuE Exllamav2: Open Full-song Generation Foundation Model", theme=theme, css=custom_log_box_css) as demo:
         gr.Markdown("# YuE Exllamav2 - Gradio Interface\nEnter your Genre and Lyrics, then generate & listen!")
 
         with gr.Column():
@@ -713,6 +725,7 @@ Note:
 
             log_box = gr.Textbox(
                 label="Logs",
+                id="log_box",
                 value="",
                 lines=20,
                 max_lines=30,
