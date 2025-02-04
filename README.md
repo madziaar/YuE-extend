@@ -4,6 +4,7 @@ Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music gene
 
 > **Note**: This project is a performance-optimized fork of the official [YuE repository](https://github.com/multimodal-art-projection/YuE). For more details about the model and its architecture, please refer to the original repository.
 
+
 ![Gradio Interface Preview](/preview.png)
 
 ---
@@ -23,7 +24,7 @@ Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music gene
 
 
 > **Note**: Keep an eye on updates to know when you need to do a docker pull alissonpereiraanjos/yue-interface:latest
-
+* **2025.02.04 🔥**: Added field to save the result file with a custom name
 * **2025.02.03 🔥**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
 * **2025.02.01 (Oficial Repository) 🧑🏻‍💻 Inference Update**: 1. Support dual-track ICL mode. 2. Fix "instrumental" naming bug in output files. 3. Support seeding. 
 * **2025.01.31 🔥**: Added possibility to select existing models using a dropdown, added Refresh File Explorer button and Warnings are ignored in the log.

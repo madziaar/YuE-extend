@@ -4,7 +4,7 @@ import numpy as np
 import soundfile as sf
 import torch
 import torchaudio
-from common import parser, seed_everything
+from common import parser, seed_everything, sanitize_filename
 from models.soundstream_hubert_new import SoundStream
 from omegaconf import OmegaConf
 from post_process_audio import replace_low_freq_with_energy_matched
@@ -23,13 +23,19 @@ def save_audio(wav: torch.Tensor, path, sample_rate: int, rescale: bool = False)
 
 
 def post_process(
-    codec_model: SoundStream, device: torch.device, output_dir: str, config_path: str, vocal_decoder_path: str, inst_decoder_path: str, rescale: bool
+    codec_model: SoundStream, device: torch.device, output_dir: str, config_path: str, vocal_decoder_path: str, inst_decoder_path: str, rescale: bool, custom_filename: str, generation_timestamp: str
 ):
+    # custom filename
+    custom_filename = sanitize_filename(custom_filename).strip()
+    custom_filename_track = custom_filename + "_" if custom_filename else ""
+    itrack_filename = f"{custom_filename_track}{generation_timestamp}_itrack"
+    vtrack_filename = f"{custom_filename_track}{generation_timestamp}_vtrack"
+        
     # reconstruct tracks
     recons_output_dir = os.path.join(output_dir, "recons")
     recons_mix_dir = os.path.join(recons_output_dir, "mix")
     os.makedirs(recons_mix_dir, exist_ok=True)
-    stage2_result = [os.path.join(output_dir, "stage2", filename) for filename in ["vtrack.npy", "itrack.npy"]]
+    stage2_result = [os.path.join(output_dir, "stage2", filename) for filename in [f"{vtrack_filename}.npy", f"{itrack_filename}.npy"]]
     tracks = []
     for npy in stage2_result:
         codec_result = np.load(npy)
@@ -44,13 +50,13 @@ def post_process(
     # mix tracks
     for inst_path in tracks:
         try:
-            if (inst_path.endswith(".wav") or inst_path.endswith(".mp3")) and "itrack" in inst_path:
+            if (inst_path.endswith(".wav") or inst_path.endswith(".mp3")) and "_itrack" in inst_path:
                 # find pair
-                vocal_path = inst_path.replace("itrack", "vtrack")
+                vocal_path = inst_path.replace("_itrack", "_vtrack")
                 if not os.path.exists(vocal_path):
                     continue
                 # mix
-                recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace("itrack", "mixed"))
+                recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace("_itrack", "_mixed"))
                 vocal_stem, sr = sf.read(inst_path)
                 instrumental_stem, _ = sf.read(vocal_path)
                 mix_stem = (vocal_stem + instrumental_stem) / 1
@@ -68,10 +74,10 @@ def post_process(
     for npy in stage2_result:
         if "itrack" in npy:
             # Process instrumental
-            instrumental_output = process_audio(npy, os.path.join(vocoder_stems_dir, "itrack.mp3"), rescale, device, inst_decoder, codec_model)
+            instrumental_output = process_audio(npy, os.path.join(vocoder_stems_dir, f"{itrack_filename}.mp3"), rescale, device, inst_decoder, codec_model)
         else:
             # Process vocal
-            vocal_output = process_audio(npy, os.path.join(vocoder_stems_dir, "vtrack.mp3"), rescale, device, vocal_decoder, codec_model)
+            vocal_output = process_audio(npy, os.path.join(vocoder_stems_dir, f"{vtrack_filename}.mp3"), rescale, device, vocal_decoder, codec_model)
     # mix tracks
     try:
         mix_output = instrumental_output + vocal_output
@@ -101,7 +107,7 @@ def main():
     codec_model.load_state_dict(parameter_dict["codec_model"])
     codec_model.eval()
 
-    post_process(codec_model, device, args.output_dir, args.config_path, args.vocal_decoder_path, args.inst_decoder_path, args.rescale)
+    post_process(codec_model, device, args.output_dir, args.config_path, args.vocal_decoder_path, args.inst_decoder_path, args.rescale, args.custom_filename, args.generation_timestamp)
 
 
 if __name__ == "__main__":

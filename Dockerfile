@@ -20,6 +20,7 @@ ENV DOWNLOAD_MODELS="all"
 # Install dependencies required for Miniconda
 RUN apt-get update -y && \
     apt-get install -y wget bzip2 ca-certificates git curl && \
+    apt-get install nodejs -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \
@@ -90,7 +91,7 @@ RUN apt-get update && \
 COPY docker/default /etc/nginx/sites-available/default
 
 # Add Jupyter Notebook
-RUN pip install jupyterlab ipywidgets jupyter-archive jupyter_contrib_nbextensions nodejs
+RUN pip install jupyterlab ipywidgets jupyter-archive jupyter_contrib_nbextensions
 
 RUN pip install -U "huggingface_hub[cli]"
 

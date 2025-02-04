@@ -694,21 +694,27 @@ Note:
             )
 
             custom_filename = gr.Textbox(
-                label="Custom Save Filename",
+                label="Custom Save Filename (Optional)(Do not add .mp3 in the name)",
                 value="",
                 info="Custom filename for the generated output."
             )
 
             generate_button = gr.Button("Generate Music")
             stop_button = gr.Button("Stop", visible=False)
+            
+            with gr.Row():
+                total_steps = gr.State(0)
+                steps_per_epoch = gr.State(0)
+                current_epoch_display = gr.Textbox(label="Epoch Progress", interactive=False, value="Epoch: N/A")
+                current_step_display = gr.Textbox(label="Step Progress", interactive=False, value="Step: N/A")
 
             log_box = gr.Textbox(
                 label="Logs",
-                id="log_box",
                 value="",
                 lines=20,
                 max_lines=30,
-                interactive=False
+                interactive=False,
+                elem_id="log_box"
             )
             
             # workaround for the issue of the file explorer not updating

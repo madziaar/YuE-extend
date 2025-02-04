@@ -10,6 +10,8 @@ from transformers import LogitsProcessor
 import torch
 import random
 import numpy as np
+import re
+from datetime import datetime
 
 parser = argparse.ArgumentParser()
 # Model Configuration:
@@ -80,8 +82,12 @@ parser.add_argument("--vocal_decoder_path", type=str, default="./xcodec_mini_inf
 parser.add_argument("--inst_decoder_path", type=str, default="./xcodec_mini_infer/decoders/decoder_151000.pth", help="Path to Vocos decoder weights.")
 parser.add_argument("-r", "--rescale", action="store_true", help="Rescale output to avoid clipping.")
 parser.add_argument("--custom_filename", type=str, default="", help="The custom filename to use for the output files.")
+parser.add_argument("--generation_timestamp", type=str, default=datetime.now().strftime("%Y%m%d%H%M%S"), help="The timestamp used for saving files.")
 
 
+
+def sanitize_filename(text, replacement="_"):
+    return re.sub(r'[<>:"/\\|?*]', replacement, text)
 
 def seed_everything(seed: int = 42):
     random.seed(seed)

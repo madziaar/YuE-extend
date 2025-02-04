@@ -6,7 +6,7 @@ from collections import Counter
 import numpy as np
 import torch
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
+from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class, sanitize_filename
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from mmtokenizer import _MMSentencePieceTokenizer
 from tqdm import tqdm
@@ -109,8 +109,12 @@ class Stage2Pipeline:
 
 class Stage2Pipeline_HF(Stage2Pipeline):
 
-    def __init__(self, model_path: str, device: torch.device, batch_size: int):
+    def __init__(self, model_path: str, device: torch.device, batch_size: int, custom_filename: str, generation_timestamp: str):
         super().__init__(device)
+        
+        self.custom_filename = sanitize_filename(custom_filename).strip()
+        self.generation_timestamp = generation_timestamp
+        
         self.batch_size = batch_size
 
         self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, attn_implementation="sdpa")
@@ -163,8 +167,14 @@ class Stage2Pipeline_HF(Stage2Pipeline):
         return output
 
     def generate(self, output_dir: str) -> dict[str, np.array]:
+        
+        # custom filename
+        custom_filename_track = self.custom_filename + "_" if self.custom_filename else ""
+        itrack_filename = f"{custom_filename_track}{self.generation_timestamp}_itrack"
+        vtrack_filename = f"{custom_filename_track}{self.generation_timestamp}_vtrack"
+        
         outputs = {}
-        for output_name in tqdm(["vtrack.npy", "itrack.npy"]):
+        for output_name in tqdm([f"{vtrack_filename}.npy", f"{itrack_filename}.npy"]):
             # Load the prompt
             prompt = self.get_stage1_prompt(output_dir, output_name)
 
@@ -205,9 +215,12 @@ class Stage2Pipeline_HF(Stage2Pipeline):
 
 class Stage2Pipeline_EXL2(Stage2Pipeline):
 
-    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str):
+    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str, custom_filename: str, generation_timestamp: str):
         super().__init__(device)
 
+        self.custom_filename = sanitize_filename(custom_filename).strip()
+        self.generation_timestamp = generation_timestamp
+        
         self.cache_size = cache_size
 
         assert device != "cpu", "ExLlamaV2 does not support CPU inference."
@@ -232,7 +245,12 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
 
     def generate(self, output_dir: str) -> dict[str, np.array]:
 
-        parts = ["vtrack.npy", "itrack.npy"]
+        # custom filename
+        custom_filename_track = self.custom_filename + "_" if self.custom_filename else ""
+        itrack_filename = f"{custom_filename_track}{self.generation_timestamp}_itrack"
+        vtrack_filename = f"{custom_filename_track}{self.generation_timestamp}_vtrack"
+        
+        parts = [f"{vtrack_filename}.npy", f"{itrack_filename}.npy"]
         full_batch = []
 
         # Collect up to 300 token (6s) segments for all parts
@@ -342,7 +360,7 @@ def main():
     device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
 
     if args.stage2_use_exl2:
-        pipeline = Stage2Pipeline_EXL2(model_path=args.stage2_model, device=device, cache_size=args.stage2_cache_size, cache_mode=args.stage2_cache_mode)
+        pipeline = Stage2Pipeline_EXL2(model_path=args.stage2_model, device=device, cache_size=args.stage2_cache_size, cache_mode=args.stage2_cache_mode, custom_filename=args.custom_filename, generation_timestamp=args.generation_timestamp)
         pass
     else:
         pipeline = Stage2Pipeline_HF(model_path=args.stage2_model, device=device, batch_size=args.stage2_batch_size)

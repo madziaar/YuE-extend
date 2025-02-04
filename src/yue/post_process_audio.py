@@ -6,7 +6,6 @@ import sys
 import torchaudio
 import torchaudio.functional as F
 import torchaudio.transforms as T
-from common import parser
 
 def replace_low_freq_with_energy_matched(
     a_file: str,
@@ -99,7 +98,6 @@ def replace_low_freq_with_energy_matched(
     # ----------------------------------------------------------
     # 7. Save to c.mp3
     # ----------------------------------------------------------
-    c_file = c_file.replace("mi", "")
     torchaudio.save(c_file, wave_combined, sample_rate=sr_b)
     
     print(f"Successfully created '{os.path.basename(c_file)}' with matched low-frequency energy.")
@@ -110,10 +108,7 @@ if __name__ == "__main__":
     vocoder_dir = os.path.join(stage2_output_dir, "vocoder", "mix")
     save_dir = os.path.join(stage2_output_dir, "post_process")
     os.makedirs(save_dir, exist_ok=True)
-    
-    args = parser.parse_args()
-    save_filename = args.custom_filename if args.custom_filename else f"mixer" + f"_{datetime.now().strftime("%Y%m%d%H%M%S")}.mp3"
-    
+      
     # Create dictionaries mapping IDs to filenames
     recons_files = {}
     vocoder_files = {}
@@ -154,6 +149,6 @@ if __name__ == "__main__":
         replace_low_freq_with_energy_matched(
             a_file=a,     # 16kHz
             b_file=b,     # 48kHz
-            c_file=os.path.join(save_dir, save_filename),
+            c_file=os.path.join(save_dir, os.path.basename(b)),
             cutoff_freq=5500.0
         )

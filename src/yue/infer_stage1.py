@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import torchaudio
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
+from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class, sanitize_filename
 from einops import rearrange
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from exllamav2.generator import ExLlamaV2Sampler
@@ -155,7 +155,7 @@ class Stage1Pipeline:
         section_text = segment_p.replace("[start_of_segment]", "").replace("[end_of_segment]", "")
         return self.end_of_segment + self.start_of_segment + self.mmtokenizer.tokenize(section_text) + [self.mmtokenizer.soa] + self.codec_tool.sep_ids
 
-    def save(self, raw_output: torch.Tensor, output_dir: str, use_audio_prompt: bool, use_dual_tracks_prompt: bool):
+    def save(self, raw_output: torch.Tensor, output_dir: str, use_audio_prompt: bool, use_dual_tracks_prompt: bool, custom_filename: str, generation_timestamp: str):
         # save raw output and check sanity
         ids = raw_output[0].cpu().numpy()
         soa_idx = np.where(ids == self.mmtokenizer.soa)[0].tolist()
@@ -178,9 +178,16 @@ class Stage1Pipeline:
         vocals = np.concatenate(vocals, axis=1)
         instrumentals = np.concatenate(instrumentals, axis=1)
         stage1_output_dir = os.path.join(output_dir, "stage1")
+        
+        # custom filename
+        custom_filename = sanitize_filename(custom_filename).strip()
+        custom_filename_track = custom_filename + "_" if custom_filename else ""
+        itrack_filename = f"{custom_filename_track}{generation_timestamp}_itrack"
+        vtrack_filename = f"{custom_filename_track}{generation_timestamp}_vtrack"
+    
         os.makedirs(stage1_output_dir, exist_ok=True)
-        vocal_save_path = os.path.join(stage1_output_dir, "vtrack.npy")
-        inst_save_path = os.path.join(stage1_output_dir, "itrack.npy")
+        vocal_save_path = os.path.join(stage1_output_dir, f"{vtrack_filename}.npy")
+        inst_save_path = os.path.join(stage1_output_dir, f"{itrack_filename}.npy")
         np.save(vocal_save_path, vocals)
         np.save(inst_save_path, instrumentals)
 
@@ -479,7 +486,7 @@ def main():
     )
 
     # Save result
-    pipeline.save(raw_output, args.output_dir, args.use_audio_prompt, args.use_dual_tracks_prompt)
+    pipeline.save(raw_output, args.output_dir, args.use_audio_prompt, args.use_dual_tracks_prompt, args.custom_filename, args.generation_timestamp)
 
 
 if __name__ == "__main__":
