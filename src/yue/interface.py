@@ -561,7 +561,7 @@ def build_gradio_interface():
                 value=4,
                 precision=0,
                 info="The batch size used in Stage 2 inference.",
-                visble=False
+                visible=False
             )
             output_dir = gr.Textbox(
                 label="Output Directory",
