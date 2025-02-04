@@ -4,6 +4,10 @@ Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music gene
 
 > **Note**: This project is a fork of the fork made by user sgsdxzy which has been optimized for performance using exllamav2 from the [YuE-exllamav2 repository](https://github.com/sgsdxzy/YuE-exllamav2). For more official information about the model, follow the [official repository](https://github.com/multimodal-art-projection/YuE).
 
+---
+
+## Interface
+
 ![Gradio Interface Preview](/preview.png)
 
 ---
