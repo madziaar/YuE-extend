@@ -342,27 +342,6 @@ def generate_song(
     if keep_intermediate:
         cmd.append("--keep_intermediate")
         
-    # if use_mmgp:
-    #     cmd += [
-    #         "--use_mmgp",
-    #         "--mmgp_profile", f"{mmgp_profile}"
-    #     ]
-        
-    # if use_sdpa:
-    #     cmd.append("--sdpa")
-        
-    # if use_torch_compile:
-    #     cmd.append("--compile")
-   
-    # TODO: Solve the issue with the transformers patch     
-    # if use_transformers_patch:
-    #    print("Using transformers patch.")
-    #    subprocess.run(["bash", f"{PROJECT_DIR}/patchtransformers.sh"])
-    # else:
-    #     print("Not using transformers patch.")
-    #     if os.path.exists(f"{PROJECT_DIR}/transformers_bkp"):
-    #        subprocess.run(["bash", f"{PROJECT_DIR}/revertpatchtransformers.sh"])
-        
     # If using conda, wrap the command
     if os.path.isfile(CONDA_ACTIVATE_PATH):
         prefix_cmd = (
