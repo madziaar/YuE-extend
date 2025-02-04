@@ -2,7 +2,11 @@
 
 Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music generation using YuE models with **ExLlamaV2 acceleration**. This project delivers the best possible performance for YuE models, achieving exceptional speed and efficiency on modern NVIDIA GPUs like the RTX 4090 and RTX 3060.
 
-> **Note**: This project is a performance-optimized fork of the official [YuE repository](https://github.com/multimodal-art-projection/YuE). For more details about the model and its architecture, please refer to the original repository.
+> **Note**: This project is a fork of the fork made by user sgsdxzy which has been optimized for performance using exllamav2 from the [YuE-exllamav2 repository](https://github.com/sgsdxzy/YuE-exllamav2). For more official information about the model, follow the [official repository](https://github.com/multimodal-art-projection/YuE).
+
+---
+
+## Interface
 
 
 ![Gradio Interface Preview](/preview.png)
