@@ -60,12 +60,9 @@ ENV PATH="/opt/conda/envs/pyenv/bin:$PATH"
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p $CONDA_DIR && \
     rm miniconda.sh && \
-    $CONDA_DIR/bin/conda init bash
-
-# Create environment with Python 3.12 and MPI
-RUN $CONDA_DIR/bin/conda create -n pyenv python=3.12 -y && \
-    $CONDA_DIR/bin/conda install -n pyenv -c conda-forge openmpi mpi4py -y 
-
+    $CONDA_DIR/bin/conda init bash && \
+    $CONDA_DIR/bin/conda create -n pyenv python=3.12 -y && \
+    $CONDA_DIR/bin/conda install -n pyenv -c conda-forge openmpi mpi4py -y
 
 # Define PyTorch versions via arguments
 ARG PYTORCH="2.5.1"
