@@ -245,7 +245,11 @@ def generate_song(
     prompt_end_time_2,
     disable_offload_model,
     keep_intermediate,
-    custom_filename
+    custom_filename,
+    stage1_cache_size,
+    stage1_cache_mode,
+    stage2_cache_size,
+    stage2_cache_mode
     # use_mmgp,
     # mmgp_profile,
     # use_sdpa,
@@ -295,17 +299,20 @@ def generate_song(
     cmd = [
         "python", "-u", f"{BASE_YUE_DIR}/infer.py",  # Added '-u' here
         "--stage1_use_exl2",
-        "--stage2_use_exl2",
-        "--stage2_cache_size 32768",
         "--stage1_model", f"'{stage1_model}'",
+        "--stage1_cache_size", str(stage1_cache_size),
+        "--stage1_cache_mode", f"'{stage1_cache_mode}'",
         # "--quantization_stage1", f"{stage1_model_quantization}",
+        "--stage2_use_exl2",
         "--stage2_model", f"'{stage2_model}'",
+        "--stage2_cache_size", str(stage2_cache_size),
+        "--stage2_cache_mode", f"'{stage2_cache_mode}'",
         # "--quantization_stage2", f"{stage2_model_quantization}",
         #"--tokenizer", f"'{tokenizer_model}'",
         "--genre_txt", f"'{genre_txt_path}'",
         "--lyrics_txt", f"'{lyrics_txt_path}'",
         "--run_n_segments", str(run_n_segments),
-        "--stage2_batch_size", str(stage2_batch_size),
+        # "--stage2_batch_size", str(stage2_batch_size),
         "--output_dir", f"'{output_dir}'",
         "--cuda_idx", str(cuda_idx),
         "--seed", f"{seed}",
@@ -521,11 +528,40 @@ def build_gradio_interface():
                 precision=0,
                 info="Set Number of Segments to the number of lyric sections if you want to generate a full song. Additionally, you can increase Stage2 Batch Size based on your available GPU memory."
             )
+            stage1_cache_size = gr.Number(
+                label="Stage1 Cache Size",
+                value=16384,
+                precision=0,
+                info="The cache size used in Stage 1 inference."
+            )
+            
+            stage1_cache_mode = gr.Dropdown(
+                label="Stage1 Cache Mode",
+                choices=["FP16", "Q8", "Q6", "Q4"],
+                value="FP16",
+                interactive=True
+            )
+            
+            stage2_cache_size = gr.Number(
+                label="Stage2 Cache Size",
+                value=8192,
+                precision=0,
+                info="The cache size used in Stage 2 inference."
+            )
+            
+            stage2_cache_mode = gr.Dropdown(
+                label="Stage2 Cache Mode",
+                choices=["FP16", "Q8", "Q6", "Q4"],
+                value="FP16",
+                interactive=True
+            )
+            
             stage2_batch_size = gr.Number(
                 label="Stage2 Batch Size",
                 value=4,
                 precision=0,
-                info="The batch size used in Stage 2 inference."
+                info="The batch size used in Stage 2 inference.",
+                visble=False
             )
             output_dir = gr.Textbox(
                 label="Output Directory",
@@ -790,7 +826,11 @@ Note:
             prompt_end_time_2,
             disable_offload_model,
             keep_intermediate,
-            custom_filename
+            custom_filename,
+            stage1_cache_size,
+            stage1_cache_mode,
+            stage2_cache_size,
+            stage2_cache_mode
             # use_mmgp,
             # mmgp_profile,
             # use_sdpa,
@@ -843,7 +883,11 @@ Note:
                 prompt_end_time_2,
                 disable_offload_model,
                 keep_intermediate,
-                custom_filename
+                custom_filename,
+                stage1_cache_size,
+                stage1_cache_mode,
+                stage2_cache_size,
+                stage2_cache_mode
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,
@@ -883,7 +927,11 @@ Note:
                 prompt_end_time_2,
                 disable_offload_model,
                 keep_intermediate,
-                custom_filename
+                custom_filename,
+                stage1_cache_size,
+                stage1_cache_mode,
+                stage2_cache_size,
+                stage2_cache_mode
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,
