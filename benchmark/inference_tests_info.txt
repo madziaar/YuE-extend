@@ -1,0 +1,25 @@
+RTX 4090 24 VRAM, 61gb RAM, model base BF16
+
+Test 1
+
+Stage 1: cache size 16384, cache mode Q4, 6 segments, 10 minutes 15 seconds
+Stage 2: cache size 8192, cache mode Q4, 19 batch size (auto calculated), 6 minutes 16 seconds
+Stage 1 + Stage 2: 16 minutes 31 seconds, audio result 2 minutes 47 seconds
+ 
+Test 2
+
+Stage 1: cache size 16384, cache mode Q6, 6 segments, 9 minutes 35 seconds
+Stage 2: cache size 8192, cache mode Q6, 19 batch size (auto calculated), 6 minutes 6 seconds
+Stage 1 + Stage 2: 15 minutes 42 seconds, audio result 2 minutes 40 seconds
+
+Test 3
+
+Stage 1: cache size 16384, cache mode Q8, 6 segments, 10 minutes 5 seconds
+Stage 2: cache size 8192, cache mode Q8, 19 batch size (auto calculated), 6 minutes 13 seconds
+Stage 1 + Stage 2: 16 minutes 18 seconds, audio result 2 minutes 45 seconds
+
+Test 4
+
+Stage 1: cache size 16384, cache mode BF16, 6 segments, 9 minutes 51 seconds
+Stage 2: cache size 8192, cache mode BF16, 19 batch size (auto calculated), 5 minutes 6 seconds
+Stage 1 + Stage 2: 14 minutes 56 seconds, audio result 2 minutes 47 seconds
