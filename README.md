@@ -27,7 +27,7 @@ Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music gene
 ## News and Updates
 
 
-> **Note**: Keep an eye on updates to know when you need to do a docker pull alissonpereiraanjos/yue-interface:latest
+> **Note**: Keep an eye on updates to know when you need to do a docker pull alissonpereiraanjos/yue-exllamav2-interface
 
 * **2025.02.04 🔥**: Added field to save the result file with a custom name
 * **2025.02.03 🔥**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
