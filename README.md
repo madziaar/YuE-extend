@@ -144,7 +144,7 @@ docker-compose up -d
 
   ```yaml
   environment:
-    - DOWNLOAD_MODELS=YuE-s2-1B-general,YuE-s1-7B-anneal-en-cot
+    - DOWNLOAD_MODELS=YuE-s2-1B-general,YuE-s1-7B-anneal-en-cot,YuE-s1-7B-anneal-en-icl,YuE-upsampler
   ```
 
 - **Different ports**: If you need to use different ports, adjust the port mappings under the `ports` section.
