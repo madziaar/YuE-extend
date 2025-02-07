@@ -24,35 +24,18 @@ MODELS_BF16["YuE-s2-1B-general"]="m-a-p/YuE-s2-1B-general:${MODEL_DIR}/YuE-s2-1B
 MODELS_BF16["YuE-upsampler"]="m-a-p/YuE-upsampler:${MODEL_DIR}/YuE-upsampler"
 
 
-# declare -A MODELS_BPW
-# MODELS_BPW["YuE-s1-7B-anneal-en-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-int8"
-# MODELS_BPW["YuE-s1-7B-anneal-en-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-en-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-en-icl-int8"
-# # MODELS_BPW["YuE-s1-7B-anneal-jp-kr-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-cot-int8"
-# # MODELS_BPW["YuE-s1-7B-anneal-jp-kr-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-icl-int8"
-# # MODELS_BPW["YuE-s1-7B-anneal-zh-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-zh-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-zh-cot-int8"
-# # MODELS_BPW["YuE-s1-7B-anneal-zh-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-zh-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-zh-icl-int8"
-# # MODELS_BPW["YuE-s2-1B-general-int8"]="Alissonerdx/YuE-s2-1B-general-int8:${MODEL_DIR}/YuE-s2-1B-general-int8"
-# # MODELS_BPW["YuE-upsampler"]="m-a-p/YuE-upsampler:${MODEL_DIR}/YuE-upsampler"
-
-declare -A MODELS_INT8
-MODELS_INT8["YuE-s1-7B-anneal-en-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-int8"
-MODELS_INT8["YuE-s1-7B-anneal-en-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-en-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-en-icl-int8"
-MODELS_INT8["YuE-s1-7B-anneal-jp-kr-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-cot-int8"
-MODELS_INT8["YuE-s1-7B-anneal-jp-kr-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-icl-int8"
-MODELS_INT8["YuE-s1-7B-anneal-zh-cot-int8"]="Alissonerdx/YuE-s1-7B-anneal-zh-cot-int8:${MODEL_DIR}/YuE-s1-7B-anneal-zh-cot-int8"
-MODELS_INT8["YuE-s1-7B-anneal-zh-icl-int8"]="Alissonerdx/YuE-s1-7B-anneal-zh-icl-int8:${MODEL_DIR}/YuE-s1-7B-anneal-zh-icl-int8"
-MODELS_INT8["YuE-s2-1B-general-int8"]="Alissonerdx/YuE-s2-1B-general-int8:${MODEL_DIR}/YuE-s2-1B-general-int8"
-MODELS_INT8["YuE-upsampler"]="m-a-p/YuE-upsampler:${MODEL_DIR}/YuE-upsampler"
-
-declare -A MODELS_NF4
-MODELS_NF4["YuE-s1-7B-anneal-en-cot-nf4"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-nf4"
-MODELS_NF4["YuE-s1-7B-anneal-en-icl-nf4"]="Alissonerdx/YuE-s1-7B-anneal-en-icl-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-en-icl-nf4"
-MODELS_NF4["YuE-s1-7B-anneal-jp-kr-cot-nf4"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-cot-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-cot-nf4"
-MODELS_NF4["YuE-s1-7B-anneal-jp-kr-icl-nf4"]="Alissonerdx/YuE-s1-7B-anneal-jp-kr-icl-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-jp-kr-icl-nf4"
-MODELS_NF4["YuE-s1-7B-anneal-zh-cot-nf4"]="Alissonerdx/YuE-s1-7B-anneal-zh-cot-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-zh-cot-nf4"
-MODELS_NF4["YuE-s1-7B-anneal-zh-icl-nf4"]="Alissonerdx/YuE-s1-7B-anneal-zh-icl-nf4:${MODEL_DIR}/YuE-s1-7B-anneal-zh-icl-nf4"
-MODELS_NF4["YuE-s2-1B-general-nf4"]="Alissonerdx/YuE-s2-1B-general-nf4:${MODEL_DIR}/YuE-s2-1B-general-nf4"
-MODELS_NF4["YuE-upsampler"]="m-a-p/YuE-upsampler:${MODEL_DIR}/YuE-upsampler"
+declare -A MODELS_EXL2
+MODELS_EXL2["YuE-s1-7B-anneal-en-cot-exl2-3.0bpw"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-3.0bpw:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-exl2-3.0bpw"
+MODELS_EXL2["YuE-s1-7B-anneal-en-cot-exl2-4.0bpw"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-4.0bpw:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-exl2-4.0bpw"
+MODELS_EXL2["YuE-s1-7B-anneal-en-cot-exl2-5.0bpw"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-5.0bpw:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-exl2-5.0bpw"
+MODELS_EXL2["YuE-s1-7B-anneal-en-cot-exl2-6.0bpw"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-6.0bpw:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-exl2-6.0bpw"
+MODELS_EXL2["YuE-s1-7B-anneal-en-cot-exl2-8.0bpw"]="Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw:${MODEL_DIR}/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw"
+MODELS_EXL2["YuE-s2-1B-general-exl2-3.0bpw"]="Alissonerdx/YuE-s2-1B-general-exl2-3.0bpw:${MODEL_DIR}/YuE-s2-1B-general-exl2-3.0bpw"
+MODELS_EXL2["YuE-s2-1B-general-exl2-4.0bpw"]="Alissonerdx/YuE-s2-1B-general-exl2-4.0bpw:${MODEL_DIR}/YuE-s2-1B-general-exl2-4.0bpw"
+MODELS_EXL2["YuE-s2-1B-general-exl2-5.0bpw"]="Alissonerdx/YuE-s2-1B-general-exl2-5.0bpw:${MODEL_DIR}/YuE-s2-1B-general-exl2-5.0bpw"
+MODELS_EXL2["YuE-s2-1B-general-exl2-6.0bpw"]="Alissonerdx/YuE-s2-1B-general-exl2-6.0bpw:${MODEL_DIR}/YuE-s2-1B-general-exl2-6.0bpw"
+MODELS_EXL2["YuE-s2-1B-general-exl2-8.0bpw"]="Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw:${MODEL_DIR}/YuE-s2-1B-general-exl2-8.0bpw"
+MODELS_EXL2["YuE-upsampler"]="m-a-p/YuE-upsampler:${MODEL_DIR}/YuE-upsampler"
 
 if [ ! -f "$INIT_MARKER" ]; then
     echo "First-time initialization..."
@@ -89,29 +72,20 @@ if [ ! -f "$INIT_MARKER" ]; then
             for key in "${!MODELS_BF16[@]}"; do
                 MODELS[$key]="${MODELS_BF16[$key]}"
             done
-        elif [ "$DOWNLOAD_MODELS" = "all_int8" ]; then
-            SELECTED_MODELS=("${!MODELS_INT8[@]}")
+        elif [ "$DOWNLOAD_MODELS" = "all_exl2" ]; then
+            SELECTED_MODELS=("${!MODELS_EXL2[@]}")
             declare -A MODELS
-            for key in "${!MODELS_INT8[@]}"; do
-                MODELS[$key]="${MODELS_INT8[$key]}"
-            done
-        elif [ "$DOWNLOAD_MODELS" = "all_nf4" ]; then
-            SELECTED_MODELS=("${!MODELS_NF4[@]}")
-            declare -A MODELS
-            for key in "${!MODELS_NF4[@]}"; do
-                MODELS[$key]="${MODELS_NF4[$key]}"
+            for key in "${!MODELS_EXL2[@]}"; do
+                MODELS[$key]="${MODELS_EXL2[$key]}"
             done
         elif [ "$DOWNLOAD_MODELS" = "all" ]; then
-            SELECTED_MODELS=("${!MODELS_BF16[@]}" "${!MODELS_INT8[@]}" "${!MODELS_NF4[@]}")
+            SELECTED_MODELS=("${!MODELS_BF16[@]}" "${!MODELS_EXL2[@]}")
             declare -A MODELS
             for key in "${!MODELS_BF16[@]}"; do
                 MODELS[$key]="${MODELS_BF16[$key]}"
             done
-            for key in "${!MODELS_INT8[@]}"; do
-                MODELS[$key]="${MODELS_INT8[$key]}"
-            done
-            for key in "${!MODELS_NF4[@]}"; do
-                MODELS[$key]="${MODELS_NF4[$key]}"
+            for key in "${!MODELS_EXL2[@]}"; do
+                MODELS[$key]="${MODELS_EXL2[$key]}"
             done
         else
             IFS=',' read -r -a SELECTED_MODELS <<< "$DOWNLOAD_MODELS"
@@ -119,10 +93,8 @@ if [ ! -f "$INIT_MARKER" ]; then
             for MODEL in "${SELECTED_MODELS[@]}"; do
                 if [[ -v MODELS_BF16[$MODEL] ]]; then
                     MODELS[$MODEL]="${MODELS_BF16[$MODEL]}"
-                elif [[ -v MODELS_INT8[$MODEL] ]]; then
-                    MODELS[$MODEL]="${MODELS_INT8[$MODEL]}"
-                elif [[ -v MODELS_NF4[$MODEL] ]]; then
-                    MODELS[$MODEL]="${MODELS_NF4[$MODEL]}"
+                elif [[ -v MODELS_EXL2[$MODEL] ]]; then
+                    MODELS[$MODEL]="${MODELS_EXL2[$MODEL]}"
                 else
                     echo "Warning: Model $MODEL is not recognized. Skipping."
                 fi

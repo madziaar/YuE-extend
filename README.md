@@ -29,6 +29,7 @@ Welcome to **YuE-Exllamav2-UI**, the ultimate optimized interface for music gene
 
 > **Note**: Keep an eye on updates to know when you need to do a docker pull alissonpereiraanjos/yue-exllamav2-interface
 
+* **2025.02.07 🔥**: Added quantized English models using exllamav2 (3, 4, 5, 6 and 8 bpw), you can download them all using all_exl2 or select the ones you want by name.
 * **2025.02.04 🔥**: Added field to save the result file with a custom name
 * **2025.02.03 🔥**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
 * **2025.02.01 (Oficial Repository) 🧑🏻‍💻 Inference Update**: 1. Support dual-track ICL mode. 2. Fix "instrumental" naming bug in output files. 3. Support seeding. 
@@ -180,7 +181,7 @@ docker run --gpus all -d \
 ## Supported Models
 
 | Model Key                         | Model HF Repository                             | Container Path                                      | Quantization |
-|-----------------------------------|----------------------------------------------|----------------------------------------------------|--------------|
+|-----------------------------------|------------------------------------------------|----------------------------------------------------|--------------|
 | `xcodec_mini_infer`               | [`m-a-p/xcodec_mini_infer`](https://huggingface.co/m-a-p/xcodec_mini_infer) | `/workspace/YuE-Interface/inference/xcodec_mini_infer` | N/A          |
 | `YuE-s1-7B-anneal-en-cot`         | [`m-a-p/YuE-s1-7B-anneal-en-cot`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-cot) | `/workspace/models/YuE-s1-7B-anneal-en-cot`       | BF16         |
 | `YuE-s1-7B-anneal-en-icl`         | [`m-a-p/YuE-s1-7B-anneal-en-icl`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-en-icl) | `/workspace/models/YuE-s1-7B-anneal-en-icl`       | BF16         |
@@ -190,6 +191,16 @@ docker run --gpus all -d \
 | `YuE-s1-7B-anneal-zh-icl`         | [`m-a-p/YuE-s1-7B-anneal-zh-icl`](https://huggingface.co/m-a-p/YuE-s1-7B-anneal-zh-icl) | `/workspace/models/YuE-s1-7B-anneal-zh-icl`       | BF16         |
 | `YuE-s2-1B-general`               | [`m-a-p/YuE-s2-1B-general`](https://huggingface.co/m-a-p/YuE-s2-1B-general) | `/workspace/models/YuE-s2-1B-general`             | BF16         |
 | `YuE-upsampler`                   | [`m-a-p/YuE-upsampler`](https://huggingface.co/m-a-p/YuE-upsampler) | `/workspace/models/YuE-upsampler`                 | BF16         |
+| `YuE-s1-7B-anneal-en-cot-exl2-3.0bpw` | [`Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-3.0bpw`](https://huggingface.co/Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-3.0bpw) | `/workspace/models/YuE-s1-7B-anneal-en-cot-exl2-3.0bpw` | EXL2 (3.0bpw) |
+| `YuE-s1-7B-anneal-en-cot-exl2-4.0bpw` | [`Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-4.0bpw`](https://huggingface.co/Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-4.0bpw) | `/workspace/models/YuE-s1-7B-anneal-en-cot-exl2-4.0bpw` | EXL2 (4.0bpw) |
+| `YuE-s1-7B-anneal-en-cot-exl2-5.0bpw` | [`Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-5.0bpw`](https://huggingface.co/Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-5.0bpw) | `/workspace/models/YuE-s1-7B-anneal-en-cot-exl2-5.0bpw` | EXL2 (5.0bpw) |
+| `YuE-s1-7B-anneal-en-cot-exl2-6.0bpw` | [`Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-6.0bpw`](https://huggingface.co/Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-6.0bpw) | `/workspace/models/YuE-s1-7B-anneal-en-cot-exl2-6.0bpw` | EXL2 (6.0bpw) |
+| `YuE-s1-7B-anneal-en-cot-exl2-8.0bpw` | [`Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw`](https://huggingface.co/Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw) | `/workspace/models/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw` | EXL2 (8.0bpw) |
+| `YuE-s2-1B-general-exl2-3.0bpw`   | [`Alissonerdx/YuE-s2-1B-general-exl2-3.0bpw`](https://huggingface.co/Alissonerdx/YuE-s2-1B-general-exl2-3.0bpw) | `/workspace/models/YuE-s2-1B-general-exl2-3.0bpw` | EXL2 (3.0bpw) |
+| `YuE-s2-1B-general-exl2-4.0bpw`   | [`Alissonerdx/YuE-s2-1B-general-exl2-4.0bpw`](https://huggingface.co/Alissonerdx/YuE-s2-1B-general-exl2-4.0bpw) | `/workspace/models/YuE-s2-1B-general-exl2-4.0bpw` | EXL2 (4.0bpw) |
+| `YuE-s2-1B-general-exl2-5.0bpw`   | [`Alissonerdx/YuE-s2-1B-general-exl2-5.0bpw`](https://huggingface.co/Alissonerdx/YuE-s2-1B-general-exl2-5.0bpw) | `/workspace/models/YuE-s2-1B-general-exl2-5.0bpw` | EXL2 (5.0bpw) |
+| `YuE-s2-1B-general-exl2-6.0bpw`   | [`Alissonerdx/YuE-s2-1B-general-exl2-6.0bpw`](https://huggingface.co/Alissonerdx/YuE-s2-1B-general-exl2-6.0bpw) | `/workspace/models/YuE-s2-1B-general-exl2-6.0bpw` | EXL2 (6.0bpw) |
+| `YuE-s2-1B-general-exl2-8.0bpw`   | [`Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw`](https://huggingface.co/Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw) | `/workspace/models/YuE-s2-1B-general-exl2-8.0bpw` | EXL2 (8.0bpw) |
 
 ---
 

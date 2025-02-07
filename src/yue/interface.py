@@ -222,9 +222,9 @@ def stop_generation(pid):
     
 def generate_song(
     stage1_model,
-    stage1_model_quantization,
+    # stage1_model_quantization,
     stage2_model,
-    stage2_model_quantization,
+    # stage2_model_quantization,
     tokenizer_model,
     genre_txt_path,
     lyrics_txt_path,
@@ -401,12 +401,12 @@ def build_gradio_interface():
                 info="Select the checkpoint path for the Stage 1 model.",
                 interactive=True
             )
-            stage1_model_quantization = gr.Dropdown(
-                choices=["bf16", "int8", "int4", "nf4"],
-                label="Select the quantization of the Stage1 model",
-                value=get_quantization_type(DEFAULT_STAGE1_MODEL),
-                interactive=True
-            )
+            # stage1_model_quantization = gr.Dropdown(
+            #     choices=["bf16", "int8", "int4", "nf4"],
+            #     label="Select the quantization of the Stage1 model",
+            #     value=get_quantization_type(DEFAULT_STAGE1_MODEL),
+            #     interactive=True
+            # )
             stage2_model = gr.Dropdown(
                 label="Stage2 Model",
                 choices=stage2_choices,
@@ -414,12 +414,12 @@ def build_gradio_interface():
                 info="Select the checkpoint path for the Stage 2 model.",
                 interactive=True
             )
-            stage2_model_quantization = gr.Dropdown(
-                choices=["bf16", "int8", "int4", "nf4"],
-                label="Select the quantization of the Stage2 model",
-                value=get_quantization_type(DEFAULT_STAGE2_MODEL),
-                interactive=True
-            )
+            # stage2_model_quantization = gr.Dropdown(
+            #     choices=["bf16", "int8", "int4", "nf4"],
+            #     label="Select the quantization of the Stage2 model",
+            #     value=get_quantization_type(DEFAULT_STAGE2_MODEL),
+            #     interactive=True
+            # )
             
             # TODO: remove the tokenizer model
             tokenizer_model = gr.Textbox(
@@ -791,23 +791,23 @@ Note:
         current_audio_path = gr.State(None)
 
         # Adding Callbacks to Update Quantization Based on Selected Model
-        stage1_model.change(
-            fn=lambda model_path: get_quantization_type(model_path),
-            inputs=stage1_model,
-            outputs=stage1_model_quantization
-        )
+        # stage1_model.change(
+        #     fn=lambda model_path: get_quantization_type(model_path),
+        #     inputs=stage1_model,
+        #     outputs=stage1_model_quantization
+        # )
 
-        stage2_model.change(
-            fn=lambda model_path: get_quantization_type(model_path),
-            inputs=stage2_model,
-            outputs=stage2_model_quantization
-        )
+        # stage2_model.change(
+        #     fn=lambda model_path: get_quantization_type(model_path),
+        #     inputs=stage2_model,
+        #     outputs=stage2_model_quantization
+        # )
 
         def on_generate_click(
             stage1_model,
-            stage1_model_quantization,
+            # stage1_model_quantization,
             stage2_model,
-            stage2_model_quantization,
+            # stage2_model_quantization,
             tokenizer_model,
             genre_text,
             lyrics_text,
@@ -862,9 +862,9 @@ Note:
 
             msg, pid = generate_song(
                 stage1_model,
-                stage1_model_quantization,
+                # stage1_model_quantization,
                 stage2_model,
-                stage2_model_quantization,
+                # stage2_model_quantization,
                 tokenizer_model,
                 genre_tmp_path,
                 lyrics_tmp_path,
@@ -906,9 +906,9 @@ Note:
             fn=on_generate_click,
             inputs=[
                 stage1_model,
-                stage1_model_quantization,
+                # stage1_model_quantization,
                 stage2_model,
-                stage2_model_quantization,
+                # stage2_model_quantization,
                 tokenizer_model,
                 genre_textarea,
                 lyrics_textarea,
