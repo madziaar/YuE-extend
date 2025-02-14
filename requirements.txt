@@ -15,3 +15,5 @@ gradio
 flash-attn
 triton
 sageattention
+psutil
+huggingface_hub
