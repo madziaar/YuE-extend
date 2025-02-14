@@ -28,8 +28,8 @@ def post_process(
     # custom filename
     custom_filename = sanitize_filename(custom_filename).strip()
     custom_filename_track = custom_filename + "_" if custom_filename else ""
-    itrack_filename = f"{custom_filename_track}{generation_timestamp}_itrack"
-    vtrack_filename = f"{custom_filename_track}{generation_timestamp}_vtrack"
+    itrack_filename = f"itrack"
+    vtrack_filename = f"vtrack"
         
     # reconstruct tracks
     recons_output_dir = os.path.join(output_dir, "recons")
@@ -50,13 +50,13 @@ def post_process(
     # mix tracks
     for inst_path in tracks:
         try:
-            if (inst_path.endswith(".wav") or inst_path.endswith(".mp3")) and "_itrack" in inst_path:
+            if (inst_path.endswith(".wav") or inst_path.endswith(".mp3")) and "itrack" in inst_path:
                 # find pair
-                vocal_path = inst_path.replace("_itrack", "_vtrack")
+                vocal_path = inst_path.replace("itrack", "vtrack")
                 if not os.path.exists(vocal_path):
                     continue
                 # mix
-                recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace("_itrack", "_mixed"))
+                recons_mix = os.path.join(recons_mix_dir, os.path.basename(inst_path).replace("itrack", "mixed"))
                 vocal_stem, sr = sf.read(inst_path)
                 instrumental_stem, _ = sf.read(vocal_path)
                 mix_stem = (vocal_stem + instrumental_stem) / 1
@@ -98,6 +98,8 @@ def main():
     args = parser.parse_args()
     if args.seed is not None:
         seed_everything(args.seed)
+    if args.custom_filename is None:
+        args.custom_filename = "mixed"
 
     device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
     model_config = OmegaConf.load(args.basic_model_config)

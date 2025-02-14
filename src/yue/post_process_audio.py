@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import sys
+import time
 
 import torchaudio
 import torchaudio.functional as F
@@ -98,9 +99,16 @@ def replace_low_freq_with_energy_matched(
     # ----------------------------------------------------------
     # 7. Save to c.mp3
     # ----------------------------------------------------------
-    torchaudio.save(c_file, wave_combined, sample_rate=sr_b)
-    
-    print(f"Successfully created '{os.path.basename(c_file)}' with matched low-frequency energy.")
+    timestamp = int(time.time())
+    original_dir = os.path.dirname(c_file)
+    original_filename = os.path.basename(c_file)
+    timestamped_filename = f"{timestamp}_{original_filename}"
+    new_filepath = os.path.join(original_dir, timestamped_filename)
+
+    # Save with timestamped filename
+    torchaudio.save(new_filepath, wave_combined, sample_rate=sr_b)
+
+    print(f"Successfully created '{timestamped_filename}' with matched low-frequency energy.")
 
 if __name__ == "__main__":
     stage2_output_dir = sys.argv[1]

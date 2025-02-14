@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import torchaudio
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class, sanitize_filename
+from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
 from einops import rearrange
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from exllamav2.generator import ExLlamaV2Sampler
@@ -19,14 +19,17 @@ from torchaudio.transforms import Resample
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, LogitsProcessorList
 from transformers.cache_utils import StaticCache
-
+from transformers import HQQQuantizedCache, QuantizedCacheConfig
+from typing import List
+from pathlib import Path
 
 @dataclass
 class SampleSettings:
     # Here is suggested decoding config
     top_p = 0.93
+    #top_k = 1
     temperature = 1
-    repetition_penalty = 1.0
+    repetition_penalty = 1.1
     guidance_scale_seg0 = 1.5  # None to disable cfg
     guidance_scale = 1.2  # None to disable cfg
 
@@ -59,7 +62,7 @@ def encode_audio(codec_model, audio_prompt, device, target_bw=0.5):
 
 class Stage1Pipeline:
 
-    def __init__(self, device: torch.device, basic_model_config: str, resume_path: str):
+    def __init__(self, device: torch.device, basic_model_config: str, resume_path: str, seed: int, resume_after_n: int, extend_mp3: str, extend_mp3_end_time: int):
         self.device = device
         self.codec_tool = CodecManipulator("xcodec", 0, 1)
         self.basic_model_config = basic_model_config
@@ -77,8 +80,9 @@ class Stage1Pipeline:
         model_config = OmegaConf.load(self.basic_model_config)
         assert model_config.generator.name == "SoundStream"
         self.codec_model = SoundStream(**model_config.generator.config).to(self.device)
-        parameter_dict = torch.load(self.resume_path, map_location=self.device, weights_only=False)
+        parameter_dict = torch.load(self.resume_path, map_location="cpu", weights_only=False)
         self.codec_model.load_state_dict(parameter_dict["codec_model"])
+        self.codec_model.to(self.device) # from old
         self.codec_model.eval()
 
     def get_prompt_texts(self, genres: str, lyrics: str):
@@ -111,8 +115,12 @@ class Stage1Pipeline:
             vocals_ids = encode_audio(self.codec_model, vocals_ids, self.device, target_bw=0.5)
             instrumental_ids = encode_audio(self.codec_model, instrumental_ids, self.device, target_bw=0.5)
             vocals_ids = self.codec_tool.npy2ids(vocals_ids[0])
-            instrumental_ids = self.codec_tool.npy2ids(instrumental_ids[0])
-            ids_segment_interleaved = rearrange([np.array(vocals_ids), np.array(instrumental_ids)], "b n -> (n b)")
+            instrumental_ids = self.codec_tool.npy2ids(instrumental_ids[0])            
+            # Ensure both arrays are of the same minimum length
+            min_length = min(len(vocals_ids), len(instrumental_ids))
+            vocals_ids = vocals_ids[:min_length]
+            instrumental_ids = instrumental_ids[:min_length]
+            ids_segment_interleaved = rearrange([np.array(vocals_ids), np.array(instrumental_ids)], "b n -> (n b)")            
             audio_prompt_codec = ids_segment_interleaved[int(prompt_start_time * 50 * 2) : int(prompt_end_time * 50 * 2)]
             audio_prompt_codec = audio_prompt_codec.tolist()
         elif use_audio_prompt:
@@ -155,7 +163,7 @@ class Stage1Pipeline:
         section_text = segment_p.replace("[start_of_segment]", "").replace("[end_of_segment]", "")
         return self.end_of_segment + self.start_of_segment + self.mmtokenizer.tokenize(section_text) + [self.mmtokenizer.soa] + self.codec_tool.sep_ids
 
-    def save(self, raw_output: torch.Tensor, output_dir: str, use_audio_prompt: bool, use_dual_tracks_prompt: bool, custom_filename: str, generation_timestamp: str):
+    def save(self, raw_output: torch.Tensor, output_dir: str, use_audio_prompt: bool, use_dual_tracks_prompt: bool):
         # save raw output and check sanity
         ids = raw_output[0].cpu().numpy()
         soa_idx = np.where(ids == self.mmtokenizer.soa)[0].tolist()
@@ -178,35 +186,45 @@ class Stage1Pipeline:
         vocals = np.concatenate(vocals, axis=1)
         instrumentals = np.concatenate(instrumentals, axis=1)
         stage1_output_dir = os.path.join(output_dir, "stage1")
-        
-        # custom filename
-        custom_filename = sanitize_filename(custom_filename).strip()
-        custom_filename_track = custom_filename + "_" if custom_filename else ""
-        itrack_filename = f"{custom_filename_track}{generation_timestamp}_itrack"
-        vtrack_filename = f"{custom_filename_track}{generation_timestamp}_vtrack"
-    
         os.makedirs(stage1_output_dir, exist_ok=True)
-        vocal_save_path = os.path.join(stage1_output_dir, f"{vtrack_filename}.npy")
-        inst_save_path = os.path.join(stage1_output_dir, f"{itrack_filename}.npy")
+        vocal_save_path = os.path.join(stage1_output_dir, "vtrack.npy")
+        inst_save_path = os.path.join(stage1_output_dir, "itrack.npy")
         np.save(vocal_save_path, vocals)
         np.save(inst_save_path, instrumentals)
+        
+    def encode_existing_song_for_continuation(
+        self,
+        vocal_path: str,
+        instrumental_path: str,
+        extend_mp3_end_time: int,
+    ) -> List[int]:
+        """Encode dual-track audio into interleaved tokens, with trimming."""
 
-    def shorten_input(self, seq: torch.Tensor, max_context: int):
-        # Iteratively drop the oldest segment in the context until the sequence fits in context
-        pattern = torch.tensor(self.start_of_segment)
-        pattern_length = pattern.numel()
-        while seq.shape[-1] > max_context:
-            windows = seq[0].unfold(0, pattern_length, 1)
-            matches = (windows == pattern).all(dim=1)
-            match_indices = torch.nonzero(matches).flatten()
-            if match_indices.numel() < 3:
-                # Ensure that at least one other segment remains before the current segment for continuity
-                print("Unable to keep enough segments for smart context, falling back to simple truncation. " f"Now using the last {max_context} tokens.")
-                return seq[:, -max_context:]
-            first_segment_start = match_indices[0].item()
-            second_segment_start = match_indices[1].item()
-            seq = torch.cat((seq[:, :first_segment_start], seq[:, second_segment_start:]), dim=-1)
-        return seq
+        self.load_codec_model()  # Ensure model is loaded
+
+        # Process vocals
+        voc_audio = load_audio_mono(vocal_path)
+        voc_raw = encode_audio(self.codec_model, voc_audio, self.device, target_bw=0.5)
+        voc_ids = self.codec_tool.npy2ids(voc_raw[0])
+
+        # Process instrumental
+        instr_audio = load_audio_mono(instrumental_path)
+        instr_raw = encode_audio(self.codec_model, instr_audio, self.device, target_bw=0.5)
+        instr_ids = self.codec_tool.npy2ids(instr_raw[0])
+
+        # Validate & interleave
+        min_length = min(len(voc_ids), len(instr_ids))
+        interleaved = [
+            tok
+            for pair in zip(voc_ids[:min_length], instr_ids[:min_length])
+            for tok in pair
+        ]
+        
+        if (extend_mp3_end_time > 0):
+            interleaved = interleaved[: int(extend_mp3_end_time * 50 * 2)]
+            print("trimmed extend_mp3_interleaved up to "+str(extend_mp3_end_time)+"s, size:"+str(len(interleaved))+" tokens")
+
+        return interleaved    
 
 
 class Stage1Pipeline_HF(Stage1Pipeline):
@@ -215,11 +233,18 @@ class Stage1Pipeline_HF(Stage1Pipeline):
         super().__init__(device, **kwargs)
 
         # Load HF model
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, attn_implementation="sdpa", device_map=self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, 
+            torch_dtype=torch.bfloat16, 
+            attn_implementation="flash_attention_2",
+            #load_in_4bit=True, 
+            device_map=self.device
+            )
         self.model.eval()
         if torch.__version__ >= "2.0.0":
             self.model = torch.compile(self.model)
         self.cache_size = cache_size
+        print("load and compile done.")
 
     def generate(
         self,
@@ -234,7 +259,8 @@ class Stage1Pipeline_HF(Stage1Pipeline):
         max_new_tokens: int,
         prompt_start_time: int,
         prompt_end_time: int,
-        sample_settings: SampleSettings,
+        seed: int,
+        sample_settings: SampleSettings,        
     ) -> torch.Tensor:
 
         lyrics, prompt_texts = self.get_prompt_texts(genres, lyrics)
@@ -260,32 +286,40 @@ class Stage1Pipeline_HF(Stage1Pipeline):
             prompt_ids = torch.as_tensor(prompt_ids).unsqueeze(0).to(self.device)
             input_ids = torch.cat([raw_output, prompt_ids], dim=1) if i > 0 else prompt_ids
 
+            print("before window slicing")
             # Use window slicing in case output sequence exceeds the context of model
             max_context = self.cache_size - max_new_tokens - 1
             if input_ids.shape[-1] > max_context:
-                print(f"Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, " f"dropping early segment(s) from prompt.")
-                input_ids = self.shorten_input(input_ids, max_context)
+                print(f"Section {i}: output length {input_ids.shape[-1]} exceeding context length {max_context}, " f"now using the last {max_context} tokens.")
+                input_ids = input_ids[:, -max_context:]
 
-            past_key_values = StaticCache(
-                self.model.config, max_batch_size=1, max_cache_len=input_ids.shape[-1] + max_new_tokens, device=self.model.device, dtype=self.model.dtype
-            )
+            #past_key_values = StaticCache(
+            #    #self.model.config, max_batch_size=1, max_cache_len=input_ids.shape[-1] + max_new_tokens, device=self.model.device, dtype=self.model.dtype
+            #    self.model.config, max_batch_size=1, max_cache_len=3780, device=self.model.device, dtype=torch.bfloat16
+            #)
+            #cache_config = QuantizedCacheConfig(backend='HQQ', nbits=8, device=self.model.device, compute_dtype=torch.bfloat16)
+            #past_key_values = HQQQuantizedCache(cache_config=cache_config)
+            
 
             processors = LogitsProcessorList([BlockTokenRangeProcessor(0, 32002), BlockTokenRangeProcessor(32016, 32016)])
 
-            output_seq = self.model.generate(
-                input_ids=input_ids,
-                max_new_tokens=max_new_tokens,
-                min_new_tokens=100,
-                do_sample=True,
-                top_p=sample_settings.top_p,
-                temperature=sample_settings.temperature,
-                repetition_penalty=sample_settings.repetition_penalty,
-                eos_token_id=self.mmtokenizer.eoa,
-                pad_token_id=self.mmtokenizer.eoa,
-                logits_processor=processors,
-                guidance_scale=sample_settings.guidance_scale_seg0 if i == 0 else sample_settings.guidance_scale,
-                past_key_values=past_key_values,
-            )
+            print("before model generate")
+            with torch.no_grad():
+                output_seq = self.model.generate(
+                    input_ids=input_ids,
+                    max_new_tokens=max_new_tokens,
+                    min_new_tokens=100,
+                    do_sample=True,
+                    top_p=sample_settings.top_p,
+                    temperature=sample_settings.temperature,
+                    repetition_penalty=sample_settings.repetition_penalty,
+                    eos_token_id=self.mmtokenizer.eoa,
+                    pad_token_id=self.mmtokenizer.eoa,
+                    logits_processor=processors,
+                    guidance_scale=sample_settings.guidance_scale_seg0 if i == 0 else sample_settings.guidance_scale,
+                    #past_key_values=past_key_values,
+                )
+            print("after model generate")
 
             if output_seq[0][-1].item() != self.mmtokenizer.eoa:
                 tensor_eoa = torch.tensor([[self.mmtokenizer.eoa]], dtype=torch.long, device=output_seq.device)
@@ -322,6 +356,20 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
 
         # TODO: Output layer could be trimmed here to avoid masking out the first 32k tokens during generation
 
+    def _rebuild_cache(self, seq, cache, max_new_tokens, cache_size):
+        """Process historical tokens to rebuild KV cache"""
+        max_context = cache_size - max_new_tokens - 1
+        cache.current_seq_len = 0  # Reset cache
+
+        if seq.shape[-1] > max_context:
+            # Use sliding window matching original logic
+            truncated_seq = seq[:, -max_context:]
+        else:
+            truncated_seq = seq
+
+        # Process through model in one forward pass
+        self.model.forward(truncated_seq, cache=cache)
+    
     def generate(
         self,
         use_dual_tracks_prompt: bool,
@@ -335,7 +383,11 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         max_new_tokens: int,
         prompt_start_time: int,
         prompt_end_time: int,
-        sample_settings: SampleSettings,
+        seed: int,
+        resume_after_n: int, # -1: don't resume, 0: after first
+        extend_mp3: bool,
+        extend_mp3_end_time: int, # 0: all
+        sample_settings: SampleSettings,        
     ) -> torch.Tensor:
 
         if sample_settings.guidance_scale_seg0 is None:
@@ -346,15 +398,79 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         else:
             bsz = 2
             cfg = True
-
+        
         lyrics, prompt_texts = self.get_prompt_texts(genres, lyrics)
         run_n_segments = min(run_n_segments, len(lyrics))
 
         # Cache for the whole output sequence
         cache = self.cache_mode(self.model, batch_size=bsz, max_seq_len=self.cache_size)
+        max_context = self.cache_size - max_new_tokens - 1
+        
+        # Add existing song context for continuation
+        if extend_mp3:
+            if vocal_track_prompt_path and instrumental_track_prompt_path:
+                print("Tokenizing mp3s")
+                existing_tokens = self.encode_existing_song_for_continuation(vocal_track_prompt_path, instrumental_track_prompt_path, extend_mp3_end_time)
+                seq_prefix = torch.tensor([existing_tokens] * bsz, dtype=torch.long)
+                # Truncate to context limit
+                if seq_prefix.shape[-1] > max_context:
+                    seq_prefix = seq_prefix[:, -max_context:]
+                    print("seq_prefix > max_context, truncating up to "+str(max_context))
+            else:
+                print("Error: empty vocal_track_prompt_path or instrumental_track_prompt_path")    
+        else:            
+            print("Creating empty input seq")
+            seq_prefix = torch.empty((bsz, 0), dtype=torch.long)
+
+        # Initialize seq with prefix
+        if resume_after_n == -1 and not extend_mp3:
+            seq = seq_prefix  # Start fresh
+        elif extend_mp3:
+            seq = seq_prefix.clone()
+            # Ensure prefix fits in context window
+            if seq.shape[-1] > max_context:
+                print("seq.shape[-1] > max_context, truncating up to "+str(max_context))
+                seq = seq[:, -max_context:]
+                cache.current_seq_len = 0
+        else:
+            seq = seq_prefix.clone() # empty
 
         # Collect output here
-        seq = torch.empty((bsz, 0), dtype=torch.long)
+        if resume_after_n >= 0:
+            print(f"Resuming after segment {resume_after_n}")
+            # Load saved tokens
+            if Path(f"segments/segment_{resume_after_n}.pt").exists():
+                checkpoint = torch.load(f"segments/segment_{resume_after_n}.pt", map_location='cpu')
+            else:
+                raise FileNotFoundError(f"Error: file does not exist: segments/segment_{resume_after_n}.pt. Can't continue generation after segment {resume_after_n}. Set --resume_after_n=-1 and try again.")
+            seq = checkpoint['seq']
+
+            # Rebuild KV cache by processing the entire loaded sequence
+            # Use the same windowing strategy as during generation
+            if seq.shape[-1] > max_context:
+                # Truncate to fit within model's context window
+                truncated_seq = seq[:, -max_context:]
+                cache.current_seq_len = 0  # Reset cache since we truncated
+                print("seq.shape[-1] > max_context (again), truncating up to "+str(max_context))
+            else:
+                truncated_seq = seq
+
+            # Forward the entire sequence through the model to populate cache
+            # Process in chunks if necessary to avoid OOM
+            self.model.forward(truncated_seq, cache=cache)
+            start_segment = resume_after_n + 1
+        
+        elif extend_mp3:
+            start_segment = 1
+        else:
+            start_segment = 0
+            
+            
+        # Adjust the number of segments to generate
+        max_possible = len(lyrics) - start_segment
+        remaining_segments = min(run_n_segments, max_possible)
+        if remaining_segments <= 0:
+            return seq[:1, :]  # No more segments to generate
 
         # Sample settings
         gen_settings = ExLlamaV2Sampler.Settings(
@@ -364,11 +480,12 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
 
         # RNG for sampling, could seed here
         rng = random.Random()
-
-        for i in tqdm(range(run_n_segments)):
+        rng.seed(seed)
+        
+        for i in tqdm(range(start_segment, start_segment + remaining_segments)):
 
             # Get prompt for this segment
-            if i == 0:
+            if i == 0 and resume_after_n == -1:
                 prompt_ids = self.get_first_segment_prompt(
                     prompt_texts[1],
                     prompt_texts[0],
@@ -385,19 +502,51 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
             prompt_ids = torch.tensor([prompt_ids] * bsz, dtype=torch.long)
 
             # Accept prompt tokens
-            seq = torch.cat((seq, prompt_ids), dim=-1)
+            if (extend_mp3 and i == start_segment and resume_after_n == -1):
+                prompt_ids_init = self.get_first_segment_prompt(
+                        prompt_texts[1],
+                        prompt_texts[0],
+                        use_dual_tracks_prompt,
+                        vocal_track_prompt_path,
+                        instrumental_track_prompt_path,
+                        use_audio_prompt,
+                        audio_prompt_path,
+                        prompt_start_time,
+                        prompt_end_time,
+                    )
+                prompt_ids = self.get_segment_prompt(prompt_texts[i + 1])    
+                prompt_ids_init = torch.tensor(prompt_ids_init, dtype=torch.long)
+                prompt_ids_init = prompt_ids_init.unsqueeze(0).repeat(bsz, 1)
+                sample_eoa = torch.tensor([[self.mmtokenizer.eoa]] * bsz, dtype=torch.long)   #add OEA after mp3
+                prompt_ids = torch.tensor([prompt_ids] * bsz, dtype=torch.long)
+                
+                seq = torch.cat((prompt_ids_init, seq, sample_eoa, prompt_ids), dim=-1)
+                # Forward mp3 prompt
+                mask_len = seq.shape[-1] - 1
+                full_mask = torch.zeros((2, cache.max_seq_len), dtype=torch.half, device=self.device)
+                full_mask[1, :mask_len] = -65504.0
+                position_offsets = torch.tensor([[0], [-mask_len]], dtype=torch.int)
+                input_mask = full_mask[:, : seq.shape[-1]]
+                logits = self.model.forward(seq[:, :], cache=cache, input_mask=input_mask, position_offsets=position_offsets, last_id_only=True, seed=seed)
+            else:                
+                seq = torch.cat((seq, prompt_ids), dim=-1)
 
             # Use window slicing in case output sequence exceeds the context of model
             max_context = self.cache_size - max_new_tokens - 1
             if seq.shape[-1] > max_context:
-                print(f"Section {i}: output length {seq.shape[-1]} exceeding context length {max_context}, " f"dropping early segment(s) from prompt.")
+                print(f"Section {i}: output length {seq.shape[-1]} exceeding context length {max_context}, " f"now using the last {max_context} tokens.")
                 cache.current_seq_len = 0
-                full_ids = self.shorten_input(seq, max_context)
+                full_ids = seq[:, -max_context:]
                 incremental_ids = full_ids
             else:
                 full_ids = seq
-                incremental_ids = prompt_ids
-
+                if (extend_mp3): # mp3 continue
+                    incremental_ids = prompt_ids
+                else:
+                    incremental_ids = prompt_ids # original
+                
+                
+           
             # For the unconditional context, mask out all but the last token
             if cfg:
                 mask_len = full_ids.shape[-1] - 1
@@ -405,9 +554,9 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
                 full_mask[1, :mask_len] = -65504.0
                 position_offsets = torch.tensor([[0], [-mask_len]], dtype=torch.int)
                 input_mask = full_mask[:, : full_ids.shape[-1]]
-
+            
             # Forward prompt
-            logits = self.model.forward(incremental_ids[:, :], cache=cache, input_mask=input_mask, position_offsets=position_offsets, last_id_only=True)
+            logits = self.model.forward(incremental_ids[:, :], cache=cache, input_mask=input_mask, position_offsets=position_offsets, last_id_only=True, seed=seed)
 
             # Generate until EOS or max_new_tokens
             for new_tokens in tqdm(range(max_new_tokens)):
@@ -445,6 +594,14 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
                 seq = torch.cat((seq, sample), dim=-1)
                 # Update cache with forced token
                 self.model.forward(sample, cache=cache)
+                
+           # After each segment, save only the generated tokens
+            checkpoint = {
+                'current_segment': i,
+                'seq': seq.cpu().clone(),
+                'lyrics': lyrics  # Save original lyrics structure
+            }
+            torch.save(checkpoint, f"segments/segment_{i}.pt")
 
         raw_output = seq[:1, :]
         return raw_output
@@ -458,14 +615,18 @@ def main():
         raise FileNotFoundError(
             "Please offer dual tracks prompt filepath using '--vocal_track_prompt_path' and '--inst_decoder_path', when you enable '--use_dual_tracks_prompt'!"
         )
+    if args.extend_mp3 and not args.vocal_track_prompt_path and not args.instrumental_track_prompt_path:
+        raise FileNotFoundError(
+            "Please offer dual tracks prompt filepath using '--vocal_track_prompt_path' and '--inst_decoder_path', when you enable '--extend_mp3'!"
+        )    
     if args.seed is not None:
         seed_everything(args.seed)
 
     device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
 
-    with open(args.genre_txt) as f:
+    with open(args.genre_txt, encoding="utf-8") as f:
         genres = f.read().strip()
-    with open(args.lyrics_txt) as f:
+    with open(args.lyrics_txt, encoding="utf-8") as f:
         lyrics = f.read().strip()
 
     if args.stage1_use_exl2:
@@ -476,6 +637,10 @@ def main():
             resume_path=args.resume_path,
             cache_size=args.stage1_cache_size,
             cache_mode=args.stage1_cache_mode,
+            seed=args.seed,
+            resume_after_n=args.resume_after_n,
+            extend_mp3=args.extend_mp3,
+            extend_mp3_end_time=args.extend_mp3_end_time,
         )
     else:
         pipeline = Stage1Pipeline_HF(
@@ -484,6 +649,7 @@ def main():
             basic_model_config=args.basic_model_config,
             resume_path=args.resume_path,
             cache_size=args.stage1_cache_size,
+            seed=args.seed,             
         )
 
     # Load tokenizer and models
@@ -495,6 +661,10 @@ def main():
         audio_prompt_path=args.audio_prompt_path,
         genres=genres,
         lyrics=lyrics,
+        seed=args.seed,
+        resume_after_n=args.resume_after_n,
+        extend_mp3=args.extend_mp3,
+        extend_mp3_end_time=args.extend_mp3_end_time,
         run_n_segments=args.run_n_segments,
         max_new_tokens=args.max_new_tokens,
         prompt_start_time=args.prompt_start_time,
@@ -503,7 +673,7 @@ def main():
     )
 
     # Save result
-    pipeline.save(raw_output, args.output_dir, args.use_audio_prompt, args.use_dual_tracks_prompt, args.custom_filename, args.generation_timestamp)
+    pipeline.save(raw_output, args.output_dir, args.use_audio_prompt, args.use_dual_tracks_prompt)
 
 
 if __name__ == "__main__":
