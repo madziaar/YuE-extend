@@ -42,7 +42,7 @@ It uses:
 conda create -n yue python=3.9
 conda activate yue
 
-:: ставим торч, exllama и flash_attn-2
+# ставим торч, exllama и flash_attn-2
 pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.2.7/exllamav2-0.2.7+cu121.torch2.4.0-cp39-cp39-win_amd64.whl
 pip install https://github.com/bdashore3/flash-attention/releases/download/v2.7.1.post1/flash_attn-2.7.1.post1+cu124torch2.4.0cxx11abiFALSE-cp39-cp39-win_amd64.whl
@@ -53,10 +53,11 @@ cd YuE-extend
 pip install -r requirements.txt
 git clone https://huggingface.co/m-a-p/xcodec_mini_infer
 
-:: качаем 3 exl2 модели (5.7 + 5.7 GB + 1.8) в папку workspace\models:
+# качаем 3 exl2 модели (5.7 + 5.7 GB + 1.8) в папку workspace\models:
 huggingface-cli download Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw --local-dir workspace\models\YuE-s1-7B-anneal-en-cot-exl2-8.0bpw
 huggingface-cli download Ftfyhh/YuE-s1-7B-anneal-en-icl-8.0bpw-exl2 --local-dir YuE-s1-7B-anneal-en-icl-8.0bpw-exl2
-huggingface-cli download Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw --local-dir workspace\models\YuE-s2-1B-general-exl2-8.0bpw```
+huggingface-cli download Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw --local-dir workspace\models\YuE-s2-1B-general-exl2-8.0bpw
+```
 
 запускаем (двойной клик) start-gui.bat 
 переходим по http://127.0.0.1:7860/
