@@ -13,7 +13,6 @@ scipy==1.15.1
 accelerate>=0.26.0
 gradio
 flash-attn
-triton
 sageattention
 psutil
 huggingface_hub
