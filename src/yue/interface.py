@@ -30,8 +30,8 @@ BASE_MODELS_DIR = f"workspace/models"
 BASE_OUTPUTS_DIR = "workspace/outputs"
 BASE_INPUTS_DIR = "workspace/inputs"
 # Default Hugging Face models
-DEFAULT_STAGE1_MODEL = f"{BASE_MODELS_DIR}\YuE-s1-7B-anneal-en-cot"
-DEFAULT_STAGE2_MODEL = f"{BASE_MODELS_DIR}\YuE-s2-1B-general"
+DEFAULT_STAGE1_MODEL = f"{BASE_MODELS_DIR}\YuE-s1-7B-anneal-en-cot-exl2-8.0bpw"
+DEFAULT_STAGE2_MODEL = f"{BASE_MODELS_DIR}\YuE-s2-1B-general-exl2-8.0bpw"
 TOKENIZER_MODEL = f"{BASE_YUE_DIR}/mm_tokenizer_v0.2_hf/tokenizer.model"
 
 sys.path.append(os.path.join(f"xcodec_mini_infer"))
