@@ -10,20 +10,17 @@ It uses:
 
 
 ## Updates
-* **2025.02.14**: --extend_mp3 feature by Mozer
-* **2025.02.14**: Contunue previous generation feature (--resume_after_n) by Mozer
-* **2025.02.07 🔥**: Added quantized English models using exllamav2 (3, 4, 5, 6 and 8 bpw), you can download them all using all_exl2 or select the ones you want by name.
-* **2025.02.04 🔥**: Added field to save the result file with a custom name
-* **2025.02.03 🔥**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
-* **2025.02.01 (Oficial Repository) 🧑🏻‍💻 Inference Update**: 1. Support dual-track ICL mode. 2. Fix "instrumental" naming bug in output files. 3. Support seeding. 
-* **2025.01.31 🔥**: Added possibility to select existing models using a dropdown, added Refresh File Explorer button and Warnings are ignored in the log.
-- **2025.01.30 🔥**: Initial release with BF16 model support.
+* **2025.02.14 🔥**: --extend_mp3 feature by Mozer
+* **2025.02.14 🔥**: Contunue previous generation feature (--resume_after_n) by Mozer
+* **2025.02.03**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
+- **2025.01.30**: Initial release with BF16 model support.
 
 ---
 
 # Notes
 - --extend_mp3 works best with segments <= 30s. I recommend extending right after first verse end. Put needed seconds into `Seconds to take from mp3`
 - --extend_mp3 takes 2 separate tracks as input: vocal.mp3 + instrumental.mp3. To split your mp3 use: [python-audio-separator](https://huggingface.co/spaces/theneos/audio-separator) or [audiostrip.com](https://www.audiostrip.com/isolate) or [lalal.ai](https://www.lalal.ai/) or [vocalremover.org](https://vocalremover.org/)
+- seeding is currently not working with exllama
 - **YuE-Exllamav2**, the ultimate optimized interface for music generation using YuE models with **ExLlamaV2 acceleration**. This project delivers the best possible performance for YuE models, achieving exceptional speed and efficiency on modern NVIDIA GPUs like the RTX 4090 and RTX 3060.
 
 
