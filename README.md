@@ -31,6 +31,53 @@ It uses:
 
 ---
 
+## Установка под Windows (без wsl)
+ 
+Будут нужны
+- питон 3.9 (3.10 тоже подойдет, но ссылки все будут другие)
+- torch 2.4.0 (exllama и flash_attn скомпилированы лишь для нескольких версий торча. 2.5.1 не подойдет)
+- cuda toolkit 12.4+
+
+```cmd
+conda create -n yue python=3.9
+conda activate yue
+
+:: ставим торч, exllama и flash_attn-2
+pip install torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.2.7/exllamav2-0.2.7+cu121.torch2.4.0-cp39-cp39-win_amd64.whl
+pip install https://github.com/bdashore3/flash-attention/releases/download/v2.7.1.post1/flash_attn-2.7.1.post1+cu124torch2.4.0cxx11abiFALSE-cp39-cp39-win_amd64.whl
+
+git lfs install
+git clone https://github.com/Mozer/YuE-extend
+cd YuE-extend
+pip install -r requirements.txt
+git clone https://huggingface.co/m-a-p/xcodec_mini_infer
+
+:: качаем 3 exl2 модели (5.7 + 5.7 GB + 1.8) в папку workspace\models:
+huggingface-cli download Alissonerdx/YuE-s1-7B-anneal-en-cot-exl2-8.0bpw --local-dir workspace\models\YuE-s1-7B-anneal-en-cot-exl2-8.0bpw
+huggingface-cli download Ftfyhh/YuE-s1-7B-anneal-en-icl-8.0bpw-exl2 --local-dir YuE-s1-7B-anneal-en-icl-8.0bpw-exl2
+huggingface-cli download Alissonerdx/YuE-s2-1B-general-exl2-8.0bpw --local-dir workspace\models\YuE-s2-1B-general-exl2-8.0bpw```
+
+запускаем (двойной клик) start-gui.bat 
+переходим по http://127.0.0.1:7860/
+
+
+
+## Генерация (продолжение mp3)
+Есть 3 способа: COT модель, ICL модель + 2 дополнительные дорожки, ICL модель + 1 дополнительная общая дорожка.
+Первый, самый простой и проверенный. В web UI:
+- Stage 1 model: YuE-s1-7B-anneal-en-cot-exl2-8.0bpw
+- Lyrics: полный текст песни. Первый сегмент [verse] должен включать всё то, после чего будет сгенерировано продолжение. Первый сегмент рекомендуется ограничить одним четверостишием.
+- Установите флажок "Extend mp3". 
+- Разделите свой mp3 на вокал.mp3 + инструментал.mp3. Для разделения используйте: [python-audio-separator](https://huggingface.co/spaces/theneos/audio-separator) или [audiostrip.com](https://www.audiostrip.com/isolate) или [lalal.ai](https://www.lalal.ai/) или [vocalremover.org](https://vocalremover.org/) Загрузите vocal.mp3 + instrumental.mp3 в 2 поля файла.
+- Найдите точное время, когда заканчивается вокал в первом куплете в вашем mp3, например, 15, введите в поле "Seconds to take from mp3".
+- Generate
+
+Дополнительные галочки "Use Dual Tracks Audio Prompt?" и "Use Audio Prompt? (both vocal and instrumental)" дадут модели полную музыку всей песни. Но так контролировать генерацию становится намного труднее. Модель будет стараться сгенирировать то что уже было, будет повторять исходник один в один. В таких режимах попробуйте установить "Audio prompt End Time" на 1-2-3 секунды больше чем в поле "Seconds to take from mp3". Экспериментируйте с разными отрезками, чтобы найти баланс похожести и новизны генерации.
+
+
+## OLD readme
+
 ## Key Features
 
 - **ExLlamaV2 Optimization**: Inference acceleration with **Flash Attention 2** and **BF16 support**.
