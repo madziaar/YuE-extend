@@ -545,7 +545,7 @@ def build_gradio_interface():
                     label="Select Music Genres",
                     info="Select genre tags that describe the musical style or characteristics (e.g., instrumental, genre, mood, vocal timbre, vocal gender). This is used as part of the generation prompt.",
                     choices=genres,
-                    value=genres[110],
+                    value=genres[367],
                     interactive=True,
                     multiselect=True,
                     max_choices=50
@@ -743,7 +743,7 @@ def build_gradio_interface():
                     label="Stage1 Cache Size",
                     value=16384,
                     precision=0,
-                    info="The cache size used in Stage 1 inference. (8192 for 12GB, 32768 for 24GB )"
+                    info="The cache size used in Stage 1 inference. (set 5000 for 8GB, 8192 for 12GB, 32768 for 24GB VRAM)"
                 )
                 
                 stage1_cache_mode = gr.Dropdown(
@@ -757,9 +757,9 @@ def build_gradio_interface():
                 
                 stage2_cache_size = gr.Number(
                     label="Stage2 Cache Size",
-                    value=8192,
+                    value=16384,
                     precision=0,
-                    info="The cache size used in Stage 2 inference (8192 for 12GB, 65536 for 24GB)."
+                    info="The cache size used in Stage 2 inference (8192 for 6GB, 16384 for 8GB, 100000 for 24GB)."
                 )
                 
                 stage2_cache_mode = gr.Dropdown(
