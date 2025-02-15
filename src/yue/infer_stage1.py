@@ -559,7 +559,7 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
             logits = self.model.forward(incremental_ids[:, :], cache=cache, input_mask=input_mask, position_offsets=position_offsets, last_id_only=True, seed=seed)
 
             # Generate until EOS or max_new_tokens
-            for new_tokens in tqdm(range(max_new_tokens)):
+            for new_tokens in tqdm(range(max_new_tokens), mininterval=10):
 
                 # Transformers-equiv. CFG
                 if cfg:

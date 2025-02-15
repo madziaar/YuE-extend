@@ -282,7 +282,7 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         for _ in parts:
             output_parts.append([])
 
-        for seg_order, part_order, codec_ids, prompt_ids in tqdm(split_batch):
+        for seg_order, part_order, codec_ids, prompt_ids in tqdm(split_batch, mininterval=10):
             codec_ids = codec_ids.to(self.device)
             prompt_ids = prompt_ids.to(self.device)
             batch_size, len_prompt = prompt_ids.shape
@@ -290,7 +290,7 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
             cache = self.cache_mode(self.model, batch_size=batch_size, max_seq_len=align(prompt_ids.shape[1] + codec_ids.shape[1] * 8, 32))
             output_ids = torch.empty((batch_size, 0), dtype=torch.long, device=self.device)
 
-            for frames_idx in tqdm(range(codec_ids.shape[1])):
+            for frames_idx in tqdm(range(codec_ids.shape[1]), mininterval=10):
                 cb0 = codec_ids[:, frames_idx : frames_idx + 1]
 
                 # Append the initial prompt to the first codec frame
