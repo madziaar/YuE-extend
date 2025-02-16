@@ -17,7 +17,7 @@ It uses:
 - **2025.01.30**: Initial release with BF16 model support.
 
 Example: first verse is taken from mp3. Others are generated:
-[Example video](https://github.com/user-attachments/assets/ca37d3c1-59fa-43a9-b8db-a2972138f18b)
+https://github.com/user-attachments/assets/ca37d3c1-59fa-43a9-b8db-a2972138f18b
 
 
 
