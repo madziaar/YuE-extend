@@ -16,7 +16,12 @@ It uses:
 * **2025.02.03**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
 - **2025.01.30**: Initial release with BF16 model support.
 
----
+
+
+https://github.com/user-attachments/assets/e23e4b01-b67c-4687-a424-0772ef71a6f3
+Example: first verse is taken from mp3. Others are generated.
+
+
 
 # Notes
 - --extend_mp3 works best with segments <= 30s. I recommend extending right after first verse end. Put needed seconds into `Seconds to take from mp3`
