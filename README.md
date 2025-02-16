@@ -38,6 +38,7 @@ It uses:
 - python 3.9 (3.10 will also work, but urls will be different)
 - torch 2.4.0 (exllama and flash_attn are compiled for several torch versions. 2.5.1 won't do)
 - cuda toolkit 12.4+
+- Windows. Linux is not tested (may work)
 
 ```cmd
 conda create -n yue python=3.9
