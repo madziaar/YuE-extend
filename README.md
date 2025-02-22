@@ -10,17 +10,14 @@ It uses:
 
 
 ## Updates
+* **2025.02.22 🔥**: --extend_current_segment (use with --extend_mp3). To continue first(0) segment. Can be used to generate TTS (use speech.mp3 + some_melody.mp3)
 * **2025.02.16 🔥**: Free Google colab with COT and mp3-extend: https://colab.research.google.com/github/Mozer/YuE-extend/blob/main/colab/Yue_extend_with_exllama.ipynb
 * **2025.02.14 🔥**: --extend_mp3 feature by Mozer
 * **2025.02.14 🔥**: Contunue previous generation feature (--resume_after_n) by Mozer
 * **2025.02.03**: Added ExLlamaV2 integration with up to 500% speedup by sgsdxzy (https://github.com/sgsdxzy/YuE-exllamav2)
 - **2025.01.30**: Initial release with BF16 model support.
 
-Example: first verse is taken from mp3. Others are generated:
-
-https://github.com/user-attachments/assets/ca37d3c1-59fa-43a9-b8db-a2972138f18b
-
-
+---
 
 # Notes
 - --extend_mp3 works best with segments <= 30s. Long mp3s can cause OOM error. I recommend extending right after first verse end. Put needed seconds into `Seconds to take from mp3`
