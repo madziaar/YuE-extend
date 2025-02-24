@@ -267,7 +267,10 @@ def generate_song(
     stage2_cache_mode,
     resume_after_n,
     extend_mp3,
-    extend_mp3_end_time
+    extend_mp3_start_time,
+    extend_mp3_end_time,
+    extend_current_segment,
+    no_flash_attn,
     # use_mmgp,
     # mmgp_profile,
     # use_sdpa,
@@ -389,10 +392,21 @@ def generate_song(
             "--extend_mp3",
             "--vocal_track_prompt_path", f'"{saved_vocal_track_path}"',
             "--instrumental_track_prompt_path", f'"{saved_instrumental_track_path}"',
+            "--extend_mp3_start_time", str(extend_mp3_start_time),
             "--extend_mp3_end_time", str(extend_mp3_end_time),
             "--prompt_start_time", str(prompt_start_time),
             "--prompt_end_time", str(prompt_end_time),
         ]
+        
+    if extend_current_segment:
+        cmd += [
+            "--extend_current_segment"
+        ]
+        
+    if no_flash_attn:
+        cmd += [
+            "--no_flash_attn"
+        ]    
     
     # resume previous generation
     if resume_after_n:
@@ -414,10 +428,10 @@ def generate_song(
         suffix_cmd = "'"
         final_cmd_str = prefix_cmd + " ".join(cmd) + suffix_cmd
     else:
-        print(cmd)
+        #print(cmd)
         final_cmd_str = " ".join(cmd)
     
-    #print(final_cmd_str)
+    print(final_cmd_str)
     
     proc = subprocess.Popen(
         cmd,
@@ -620,12 +634,25 @@ def build_gradio_interface():
                     info="If set, the model will extend uploaded mp3"
                 )
                 
-                
+                extend_mp3_start_time = gr.Number(
+                    label="Start seconds to take from mp3",
+                    value=0,
+                    visible=False,
+                    info="0 - from the beginning"
+                )
                 
                 extend_mp3_end_time = gr.Number(
-                    label="Seconds to take from mp3",
+                    label="End seconds to take from mp3",
                     value=20,
+                    visible=False,
                     info="10-30s are the best (Set right after verse 1 end)"
+                )
+                
+                extend_current_segment = gr.Checkbox(
+                    label="Extend current 0 segment (verse)?",
+                    value=False,
+                    visible=False,
+                    info="If set - no new [verse] tag is added."
                 ) 
                 
                 vocal_track_prompt_file = gr.File(
@@ -659,7 +686,7 @@ def build_gradio_interface():
                 def toggle_extend_mp3(checked):
                     # If the checkbox is checked, set elements to visible, otherwise hide them
                     visibility = gr.update(visible=checked)
-                    return [visibility, visibility, visibility]
+                    return [visibility, visibility, visibility, visibility, visibility]
                 
                 extend_mp3.change(
                     fn=toggle_extend_mp3,
@@ -667,7 +694,21 @@ def build_gradio_interface():
                     outputs=[
                         vocal_track_prompt_file,
                         instrumental_track_prompt_file,                      
+                        extend_mp3_start_time,
                         extend_mp3_end_time,
+                        extend_current_segment,
+                    ]
+                )
+                
+                extend_current_segment.change(
+                    fn=toggle_extend_mp3,
+                    inputs=extend_mp3,
+                    outputs=[
+                        vocal_track_prompt_file,
+                        instrumental_track_prompt_file,                      
+                        extend_mp3_start_time,
+                        extend_mp3_end_time,
+                        extend_current_segment,
                     ]
                 )
                 
@@ -789,6 +830,11 @@ def build_gradio_interface():
                     value=0,
                     visible=True,
                     precision=0
+                )
+                no_flash_attn = gr.Checkbox(
+                    label="Disable flash attention?",
+                    value=False,
+                    info="If set, exllama won't use flash_attn_2 (for nv series 2000 or older)"
                 )
                 
                 
@@ -915,7 +961,10 @@ def build_gradio_interface():
             stage2_cache_mode,
             resume_after_n,
             extend_mp3,
-            extend_mp3_end_time
+            extend_mp3_start_time,
+            extend_mp3_end_time,
+            extend_current_segment,
+            no_flash_attn,
             # use_mmgp,
             # mmgp_profile,
             # use_sdpa,
@@ -973,7 +1022,10 @@ def build_gradio_interface():
                 stage2_cache_mode,
                 resume_after_n,
                 extend_mp3,
-                extend_mp3_end_time
+                extend_mp3_start_time,
+                extend_mp3_end_time,
+                extend_current_segment,
+                no_flash_attn,
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,
@@ -1018,7 +1070,10 @@ def build_gradio_interface():
                 stage2_cache_mode,
                 resume_after_n,
                 extend_mp3,
-                extend_mp3_end_time
+                extend_mp3_start_time,
+                extend_mp3_end_time,
+                extend_current_segment,
+                no_flash_attn,
                 # use_mmgp,
                 # mmgp_profile,
                 # use_sdpa,

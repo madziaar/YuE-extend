@@ -77,7 +77,9 @@ parser.add_argument("--cuda_idx", type=int, default=0)
 parser.add_argument("--seed", type=int, default=None, help="An integer value to reproduce generation.")
 parser.add_argument("--resume_after_n", type=int, default=-1, help="An integer value, a sequence number to continue generation from, starting from 0. -1: don't resume")
 parser.add_argument("--extend_mp3", action="store_true", help="If set, will continue mp3 tracks provided in --vocal_track_prompt_path and --instrumental_track_prompt_path")
-parser.add_argument("--extend_mp3_end_time", type=float, default=20.0, help="Seconds to resume after. 0: all")
+parser.add_argument("--extend_mp3_start_time", type=float, default=0.0, help="mp3 start seconds to take from")
+parser.add_argument("--extend_mp3_end_time", type=float, default=20.0, help="mp3 end seconds to resume after. 0: all, max is 30")
+parser.add_argument("--extend_current_segment", action="store_true", help="If set, no new tag [verse] is added.")
 # Config for xcodec and upsampler
 parser.add_argument("--basic_model_config", default="./xcodec_mini_infer/final_ckpt/config.yaml", help="YAML files for xcodec configurations.")
 parser.add_argument("--resume_path", default="./xcodec_mini_infer/final_ckpt/ckpt_00360000.pth", help="Path to the xcodec checkpoint.")
@@ -85,6 +87,7 @@ parser.add_argument("--config_path", type=str, default="./xcodec_mini_infer/deco
 parser.add_argument("--vocal_decoder_path", type=str, default="./xcodec_mini_infer/decoders/decoder_131000.pth", help="Path to Vocos decoder weights.")
 parser.add_argument("--inst_decoder_path", type=str, default="./xcodec_mini_infer/decoders/decoder_151000.pth", help="Path to Vocos decoder weights.")
 parser.add_argument("-r", "--rescale", action="store_true", help="Rescale output to avoid clipping.")
+parser.add_argument("--no_flash_attn", action="store_true", help="Disable flash attention")
 
 
 def sanitize_filename(text, replacement="_"):

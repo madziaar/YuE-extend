@@ -62,7 +62,7 @@ def encode_audio(codec_model, audio_prompt, device, target_bw=0.5):
 
 class Stage1Pipeline:
 
-    def __init__(self, device: torch.device, basic_model_config: str, resume_path: str, seed: int, resume_after_n: int, extend_mp3: str, extend_mp3_end_time: int):
+    def __init__(self, device: torch.device, basic_model_config: str, resume_path: str, seed: int, resume_after_n: int, extend_mp3: str, extend_mp3_start_time: int, extend_mp3_end_time: int, extend_current_segment: bool):
         self.device = device
         self.codec_tool = CodecManipulator("xcodec", 0, 1)
         self.basic_model_config = basic_model_config
@@ -196,6 +196,7 @@ class Stage1Pipeline:
         self,
         vocal_path: str,
         instrumental_path: str,
+        extend_mp3_start_time: int,
         extend_mp3_end_time: int,
     ) -> List[int]:
         """Encode dual-track audio into interleaved tokens, with trimming."""
@@ -220,9 +221,11 @@ class Stage1Pipeline:
             for tok in pair
         ]
         
-        if (extend_mp3_end_time > 0):
-            interleaved = interleaved[: int(extend_mp3_end_time * 50 * 2)]
-            print("trimmed extend_mp3_interleaved up to "+str(extend_mp3_end_time)+"s, size:"+str(len(interleaved))+" tokens")
+        if (extend_mp3_start_time > 0 or extend_mp3_end_time > 0):
+            if extend_mp3_end_time == 0:
+                extend_mp3_end_time = 999
+            interleaved = interleaved[int(extend_mp3_start_time * 50 * 2): int(extend_mp3_end_time * 50 * 2)]
+            print("trimmed extend_mp3_interleaved to "+str(extend_mp3_start_time)+"-"+str(extend_mp3_end_time)+" s, size:"+str(len(interleaved))+" tokens")
 
         return interleaved    
 
@@ -333,7 +336,7 @@ class Stage1Pipeline_HF(Stage1Pipeline):
 
 class Stage1Pipeline_EXL2(Stage1Pipeline):
 
-    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str, **kwargs):
+    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str, no_flash_attn: bool, **kwargs):
         super().__init__(device, **kwargs)
 
         assert device != "cpu", "ExLlamaV2 does not support CPU inference."
@@ -344,6 +347,8 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         gpu_split[device_idx] = 9999
         exl2_config = ExLlamaV2Config(model_path)
         exl2_config.no_sdpa = True  # TODO: Figure out why SDPA slows to a crawl when given custom attn mask
+        if no_flash_attn:
+            exl2_config.no_flash_attn = True # for old devices, 2000 series and older
         self.model = ExLlamaV2(exl2_config)
         self.model.load(gpu_split)
 
@@ -386,7 +391,9 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         seed: int,
         resume_after_n: int, # -1: don't resume, 0: after first
         extend_mp3: bool,
+        extend_mp3_start_time: int, # 0: start
         extend_mp3_end_time: int, # 0: all
+        extend_current_segment: bool,
         sample_settings: SampleSettings,        
     ) -> torch.Tensor:
 
@@ -410,7 +417,7 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         if extend_mp3:
             if vocal_track_prompt_path and instrumental_track_prompt_path:
                 print("Tokenizing mp3s")
-                existing_tokens = self.encode_existing_song_for_continuation(vocal_track_prompt_path, instrumental_track_prompt_path, extend_mp3_end_time)
+                existing_tokens = self.encode_existing_song_for_continuation(vocal_track_prompt_path, instrumental_track_prompt_path, extend_mp3_start_time, extend_mp3_end_time)
                 seq_prefix = torch.tensor([existing_tokens] * bsz, dtype=torch.long)
                 # Truncate to context limit
                 if seq_prefix.shape[-1] > max_context:
@@ -460,8 +467,10 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
             self.model.forward(truncated_seq, cache=cache)
             start_segment = resume_after_n + 1
         
-        elif extend_mp3:
-            start_segment = 1
+        elif extend_mp3 and extend_current_segment:
+            start_segment = 0
+        elif extend_mp3 and not extend_current_segment:
+            start_segment = 1    
         else:
             start_segment = 0
             
@@ -520,7 +529,14 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
                 sample_eoa = torch.tensor([[self.mmtokenizer.eoa]] * bsz, dtype=torch.long)   #add OEA after mp3
                 prompt_ids = torch.tensor([prompt_ids] * bsz, dtype=torch.long)
                 
-                seq = torch.cat((prompt_ids_init, seq, sample_eoa, prompt_ids), dim=-1)
+                if extend_current_segment:
+                    # CURRENT verse. init + mp3
+                    print("extending current [segment] 0")
+                    seq = torch.cat((prompt_ids_init, seq), dim=-1)
+                else:
+                    # NEW verse. init + mp3 + EOA + new_lyrics
+                    print("extending mp3, creating new [segment] 1")
+                    seq = torch.cat((prompt_ids_init, seq, sample_eoa, prompt_ids), dim=-1)
                 # Forward mp3 prompt
                 mask_len = seq.shape[-1] - 1
                 full_mask = torch.zeros((2, cache.max_seq_len), dtype=torch.half, device=self.device)
@@ -603,7 +619,7 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
             }
             torch.save(checkpoint, f"segments/segment_{i}.pt")
 
-        raw_output = seq[:1, :]
+        raw_output = seq[:1, :]      
         return raw_output
 
 
@@ -637,10 +653,13 @@ def main():
             resume_path=args.resume_path,
             cache_size=args.stage1_cache_size,
             cache_mode=args.stage1_cache_mode,
+            no_flash_attn=args.no_flash_attn,
             seed=args.seed,
             resume_after_n=args.resume_after_n,
             extend_mp3=args.extend_mp3,
+            extend_mp3_start_time=args.extend_mp3_start_time,
             extend_mp3_end_time=args.extend_mp3_end_time,
+            extend_current_segment=args.extend_current_segment,
         )
     else:
         pipeline = Stage1Pipeline_HF(
@@ -664,7 +683,9 @@ def main():
         seed=args.seed,
         resume_after_n=args.resume_after_n,
         extend_mp3=args.extend_mp3,
+        extend_mp3_start_time=args.extend_mp3_start_time,
         extend_mp3_end_time=args.extend_mp3_end_time,
+        extend_current_segment=args.extend_current_segment,
         run_n_segments=args.run_n_segments,
         max_new_tokens=args.max_new_tokens,
         prompt_start_time=args.prompt_start_time,

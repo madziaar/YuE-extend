@@ -207,7 +207,7 @@ class Stage2Pipeline_HF(Stage2Pipeline):
 
 class Stage2Pipeline_EXL2(Stage2Pipeline):
 
-    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str):
+    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str, no_flash_attn: bool):
         super().__init__(device)
 
         self.cache_size = cache_size
@@ -219,7 +219,9 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         gpu_split = [0] * torch.cuda.device_count()
         gpu_split[device_idx] = 9999
         exl2_config = ExLlamaV2Config(model_path)
-        self.model = ExLlamaV2(exl2_config)
+        if no_flash_attn:
+            exl2_config.no_flash_attn = True # for old devices, 2000 series and older
+        self.model = ExLlamaV2(exl2_config)        
         self.model.load(gpu_split)
 
         # Move embedding layer to GPU to avoid CPU sync during argmax gen loop
@@ -349,7 +351,7 @@ def main():
     device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
 
     if args.stage2_use_exl2:
-        pipeline = Stage2Pipeline_EXL2(model_path=args.stage2_model, device=device, cache_size=args.stage2_cache_size, cache_mode=args.stage2_cache_mode)
+        pipeline = Stage2Pipeline_EXL2(model_path=args.stage2_model, device=device, cache_size=args.stage2_cache_size, cache_mode=args.stage2_cache_mode, no_flash_attn=args.no_flash_attn)
         pass
     else:
         pipeline = Stage2Pipeline_HF(model_path=args.stage2_model, device=device, batch_size=args.stage2_batch_size)
