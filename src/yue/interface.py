@@ -409,7 +409,7 @@ def generate_song(
         ]    
     
     # resume previous generation
-    if resume_after_n:
+    if resume_after_n > -1:
         cmd += [
             "--resume_after_n", str(resume_after_n)
         ]    
@@ -619,13 +619,8 @@ def build_gradio_interface():
     - Set stage 1 model to s1_en_cot
     - Set checkbox "Extend mp3". 
     - Split your mp3 into vocal.mp3 + instrumental.mp3. To split use: [python-audio-separator](https://huggingface.co/spaces/theneos/audio-separator) or [audiostrip.com](https://www.audiostrip.com/isolate) or [lalal.ai](https://www.lalal.ai/) or [vocalremover.org](https://vocalremover.org/) Upload vocal.mp3 + instrumental.mp3 into 2 file fields.
-    - Find exact time, when first verse ends in your mp3, e.g. 15, put into "Seconds to take from mp3".
-    
-    Extend mp3 (alternative way):
-    - Set stage 1 model to s1_en_icl
-    - Set checkboxes "Extend mp3" and "Use dual tracks audio prompt"
-    - Upload vocal.mp3 + instrumental.mp3
-    - Put end of verse 1 into "Seconds from mp3"; start of verse 2 into "Audio prompt End Time"
+    - Find exact time, when first verse ends in your mp3, e.g. 15, put into "Seconds to take from mp3".    
+    (Alternative way: use ICL model + dual tracks)
     """)
                             
                 extend_mp3 = gr.Checkbox(
