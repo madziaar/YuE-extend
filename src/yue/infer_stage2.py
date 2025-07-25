@@ -10,10 +10,10 @@ from codecmanipulator import CodecManipulator
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from mmtokenizer import _MMSentencePieceTokenizer
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, LogitsProcessorList
-from transformers.cache_utils import StaticCache
 
 from common import BlockTokenRangeProcessor, get_cache_class, parser, seed_everything
+from transformers import AutoModelForCausalLM, LogitsProcessorList
+from transformers.cache_utils import StaticCache
 
 
 def align(n, m):
