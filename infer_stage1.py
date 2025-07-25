@@ -18,9 +18,9 @@ from models.soundstream_hubert_new import SoundStream
 from omegaconf import OmegaConf
 from torchaudio.transforms import Resample
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, LogitsProcessorList
 
 from common import BlockTokenRangeProcessor, get_cache_class, parser, seed_everything
+from transformers import AutoModelForCausalLM, LogitsProcessorList
 
 
 @dataclass

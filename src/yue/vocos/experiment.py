@@ -4,7 +4,6 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import torchaudio
-import transformers
 from vocos.discriminators import MultiPeriodDiscriminator, MultiResolutionDiscriminator
 from vocos.feature_extractors import FeatureExtractor
 from vocos.heads import FourierHead
@@ -17,6 +16,8 @@ from vocos.loss import (
 )
 from vocos.models import Backbone
 from vocos.modules import safe_log
+
+import transformers
 
 
 class VocosExp(pl.LightningModule):
