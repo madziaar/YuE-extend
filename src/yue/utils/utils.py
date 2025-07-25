@@ -86,7 +86,7 @@ def save_dict_to_json(d, path, indent=None):
 
 
 def load_dict_from_json(path):
-    return json.load(open(path, "r"))
+    return json.load(open(path))
 
 
 def write_args(args, path):
@@ -94,10 +94,8 @@ def write_args(args, path):
         (name, getattr(args, name)) for name in dir(args) if not name.startswith("_")
     )
     with open(path, "a") as args_file:
-        args_file.write("==> torch version: {}\n".format(torch.__version__))
-        args_file.write(
-            "==> cudnn version: {}\n".format(torch.backends.cudnn.version())
-        )
+        args_file.write(f"==> torch version: {torch.__version__}\n")
+        args_file.write(f"==> cudnn version: {torch.backends.cudnn.version()}\n")
         args_file.write("==> Cmd:\n")
         args_file.write(str(sys.argv))
         args_file.write("\n==> args:\n")
@@ -106,7 +104,7 @@ def write_args(args, path):
         args_file.close()
 
 
-class Logger(object):
+class Logger:
     def __init__(self, args):
         self.args = args
         self.save_dir = args.log_dir
@@ -143,7 +141,7 @@ class Logger(object):
             if self.is_primary:
                 info = str(info)
                 time_str = time.strftime("%Y-%m-%d-%H-%M")
-                info = "{}: {}".format(time_str, info)
+                info = f"{time_str}: {info}"
                 if not info.endswith("\n"):
                     info += "\n"
                 self.text_writer.write(info)

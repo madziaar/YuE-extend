@@ -1,6 +1,7 @@
 # sys.path.append('/aifs4su/data/zheny/fairseq/vae_v2/codec_final')
 import math
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 # sys.path.append('/data/zheny/UniAudio/codec/descriptaudiocodecs')
 # descript-audio-codec/dac/model

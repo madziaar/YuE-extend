@@ -3,9 +3,10 @@ from pathlib import Path
 
 import argbind
 import torch
+from tqdm import tqdm
+
 from dac import DACFile
 from dac.utils import load_model
-from tqdm import tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning)
 

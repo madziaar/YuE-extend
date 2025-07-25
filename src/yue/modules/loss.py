@@ -51,9 +51,7 @@ def sisnr_loss(x, s, eps=1e-8):
 
     if x.shape != s.shape:
         raise RuntimeError(
-            "Dimention mismatch when calculate si-snr, {} vs {}".format(
-                x.shape, s.shape
-            )
+            f"Dimention mismatch when calculate si-snr, {x.shape} vs {s.shape}"
         )
     x_zm = x - torch.mean(x, dim=-1, keepdim=True)
     s_zm = s - torch.mean(s, dim=-1, keepdim=True)

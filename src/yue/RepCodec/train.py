@@ -45,7 +45,7 @@ class TrainMain:
                 torch.backends.cudnn.benchmark = True
 
         # initialize config
-        with open(args.config, "r") as f:
+        with open(args.config) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.config.update(vars(args))
 
