@@ -14,13 +14,13 @@ class VectorQuantize(nn.Module):
     """Vector quantization w/ exponential moving averages (EMA)"""
 
     def __init__(
-            self,
-            dim: int,
-            codebook_size: int,
-            decay=0.8,
-            commitment=1.,
-            eps=1e-5,
-            n_embed=None,
+        self,
+        dim: int,
+        codebook_size: int,
+        decay=0.8,
+        commitment=1.0,
+        eps=1e-5,
+        n_embed=None,
     ):
         super().__init__()
         n_embed = self.default(n_embed, codebook_size)
@@ -32,9 +32,9 @@ class VectorQuantize(nn.Module):
         self.commitment = commitment
 
         embed = torch.randn(dim, n_embed)
-        self.register_buffer('embed', embed)
-        self.register_buffer('cluster_size', torch.zeros(n_embed))
-        self.register_buffer('embed_avg', embed.clone())
+        self.register_buffer("embed", embed)
+        self.register_buffer("cluster_size", torch.zeros(n_embed))
+        self.register_buffer("embed_avg", embed.clone())
 
     @property
     def codebook(self):
@@ -56,9 +56,9 @@ class VectorQuantize(nn.Module):
         dtype = input.dtype
         flatten = input.reshape(-1, self.dim)
         dist = (
-                flatten.pow(2).sum(1, keepdim=True)
-                - 2 * flatten @ self.embed
-                + self.embed.pow(2).sum(0, keepdim=True)
+            flatten.pow(2).sum(1, keepdim=True)
+            - 2 * flatten @ self.embed
+            + self.embed.pow(2).sum(0, keepdim=True)
         )
         _, embed_ind = (-dist).max(1)
         embed_onehot = F.one_hot(embed_ind, self.n_embed).type(dtype)
@@ -69,7 +69,10 @@ class VectorQuantize(nn.Module):
             self.ema_inplace(self.cluster_size, embed_onehot.sum(0), self.decay)
             embed_sum = flatten.transpose(0, 1) @ embed_onehot
             self.ema_inplace(self.embed_avg, embed_sum, self.decay)
-            cluster_size = self.laplace_smoothing(self.cluster_size, self.n_embed, self.eps) * self.cluster_size.sum()
+            cluster_size = (
+                self.laplace_smoothing(self.cluster_size, self.n_embed, self.eps)
+                * self.cluster_size.sum()
+            )
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
             self.embed.data.copy_(embed_normalized)
 
@@ -85,9 +88,9 @@ class VectorQuantize(nn.Module):
         dtype = input.dtype
         flatten = input.reshape(-1, self.dim)
         dist = (
-                flatten.pow(2).sum(1, keepdim=True)
-                - 2 * flatten @ self.embed
-                + self.embed.pow(2).sum(0, keepdim=True)
+            flatten.pow(2).sum(1, keepdim=True)
+            - 2 * flatten @ self.embed
+            + self.embed.pow(2).sum(0, keepdim=True)
         )
         _, embed_ind = (-dist).max(1)
         embed_onehot = F.one_hot(embed_ind, self.n_embed).type(dtype)
@@ -99,19 +102,16 @@ class VectorQuantize(nn.Module):
 
 
 class ResidualVQ(nn.Module):
-    """ Residual VQ following algorithm 1. in https://arxiv.org/pdf/2107.03312.pdf """
+    """Residual VQ following algorithm 1. in https://arxiv.org/pdf/2107.03312.pdf"""
 
-    def __init__(
-            self,
-            *,
-            num_quantizers,
-            **kwargs
-    ):
+    def __init__(self, *, num_quantizers, **kwargs):
         super().__init__()
-        self.layers = nn.ModuleList([VectorQuantize(**kwargs) for _ in range(num_quantizers)])
+        self.layers = nn.ModuleList(
+            [VectorQuantize(**kwargs) for _ in range(num_quantizers)]
+        )
 
     def forward(self, x):
-        quantized_out = 0.
+        quantized_out = 0.0
         residual = x
         all_losses = []
         all_perplexities = []
@@ -120,7 +120,9 @@ class ResidualVQ(nn.Module):
             # Issue: https://github.com/lucidrains/vector-quantize-pytorch/issues/33
             # We found considering only the 1st layer VQ's graident results in better performance
             # residual = residual - quantized.detach() # considering all layers' graidents
-            residual = residual - quantized  # considering only the first layer's graident
+            residual = (
+                residual - quantized
+            )  # considering only the first layer's graident
             quantized_out = quantized_out + quantized
             all_losses.append(loss)
             all_perplexities.append(perplexity)
@@ -128,7 +130,7 @@ class ResidualVQ(nn.Module):
         return quantized_out, all_losses, all_perplexities
 
     def forward_index(self, x, flatten_idx=False):
-        quantized_out = 0.
+        quantized_out = 0.0
         residual = x
         all_indices = []
         for i, layer in enumerate(self.layers):
@@ -137,7 +139,7 @@ class ResidualVQ(nn.Module):
             residual = residual - quantized
             quantized_out = quantized_out + quantized
             if flatten_idx:
-                indices += (self.codebook_size * i)
+                indices += self.codebook_size * i
             all_indices.append(indices)
         all_indices = torch.stack(all_indices)
         return quantized_out, all_indices.squeeze(1)

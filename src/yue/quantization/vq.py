@@ -6,9 +6,9 @@
 
 """Residual vector quantizer implementation."""
 
-from dataclasses import dataclass, field
 import math
 import typing as tp
+from dataclasses import dataclass, field
 
 import torch
 from torch import nn
@@ -39,6 +39,7 @@ class ResidualVectorQuantizer(nn.Module):
             that have an exponential moving average cluster size less than the specified threshold with
             randomly selected vector from the current batch.
     """
+
     def __init__(
         self,
         dimension: int = 256,
@@ -67,7 +68,9 @@ class ResidualVectorQuantizer(nn.Module):
             threshold_ema_dead_code=self.threshold_ema_dead_code,
         )
 
-    def forward(self, x: torch.Tensor, sample_rate: int, bandwidth: tp.Optional[float] = None): # -> QuantizedResult:
+    def forward(
+        self, x: torch.Tensor, sample_rate: int, bandwidth: tp.Optional[float] = None
+    ):  # -> QuantizedResult:
         """Residual vector quantization on the given input tensor.
         Args:
             x (torch.Tensor): Input tensor.
@@ -83,23 +86,25 @@ class ResidualVectorQuantizer(nn.Module):
         quantized, codes, commit_loss = self.vq(x, n_q=n_q)
         bw = torch.tensor(n_q * bw_per_q).to(x)
         return quantized, codes, bw, torch.mean(commit_loss)
-        #return QuantizedResult(quantized, codes, bw, penalty=torch.mean(commit_loss))
+        # return QuantizedResult(quantized, codes, bw, penalty=torch.mean(commit_loss))
 
-    def get_num_quantizers_for_bandwidth(self, sample_rate: int, bandwidth: tp.Optional[float] = None) -> int:
-        """Return n_q based on specified target bandwidth.
-        """
+    def get_num_quantizers_for_bandwidth(
+        self, sample_rate: int, bandwidth: tp.Optional[float] = None
+    ) -> int:
+        """Return n_q based on specified target bandwidth."""
         bw_per_q = self.get_bandwidth_per_quantizer(sample_rate)
         n_q = self.n_q
-        if bandwidth and bandwidth > 0.:
+        if bandwidth and bandwidth > 0.0:
             n_q = int(max(1, math.floor(bandwidth / bw_per_q)))
         return n_q
 
     def get_bandwidth_per_quantizer(self, sample_rate: int):
-        """Return bandwidth per quantizer for a given input sample rate.
-        """
+        """Return bandwidth per quantizer for a given input sample rate."""
         return math.log2(self.bins) * sample_rate / 1000
 
-    def encode(self, x: torch.Tensor, sample_rate: int, bandwidth: tp.Optional[float] = None) -> torch.Tensor:
+    def encode(
+        self, x: torch.Tensor, sample_rate: int, bandwidth: tp.Optional[float] = None
+    ) -> torch.Tensor:
         """Encode a given input tensor with the specified sample rate at the given bandwidth.
         The RVQ encode method sets the appropriate number of quantizer to use
         and returns indices for each quantizer.
@@ -109,7 +114,6 @@ class ResidualVectorQuantizer(nn.Module):
         return codes
 
     def decode(self, codes: torch.Tensor) -> torch.Tensor:
-        """Decode the given codes to the quantized representation.
-        """
+        """Decode the given codes to the quantized representation."""
         quantized = self.vq.decode(codes)
         return quantized

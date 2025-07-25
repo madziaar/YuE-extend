@@ -18,16 +18,16 @@ logger = logging.getLogger("repcodec_train")
 
 class Trainer:
     def __init__(
-            self,
-            steps: int,
-            epochs: int,
-            data_loader: dict,
-            model: dict,
-            criterion: dict,
-            optimizer: dict,
-            scheduler: dict,
-            config: dict,
-            device=torch.device("cpu"),
+        self,
+        steps: int,
+        epochs: int,
+        data_loader: dict,
+        model: dict,
+        criterion: dict,
+        optimizer: dict,
+        scheduler: dict,
+        config: dict,
+        device=torch.device("cpu"),
     ):
         self.steps = steps
         self.epochs = epochs
@@ -80,9 +80,7 @@ class Trainer:
     def run(self):
         """Run training."""
         self.finish_train = False
-        self.tqdm = tqdm(
-            initial=self.steps, total=self.train_max_steps, desc="[train]"
-        )
+        self.tqdm = tqdm(initial=self.steps, total=self.train_max_steps, desc="[train]")
         while True:
             self._train_epoch()
 
@@ -95,9 +93,7 @@ class Trainer:
 
     def save_checkpoint(self, checkpoint_path: str):
         state_dict = {
-            "model": {
-                "repcodec": self.model["repcodec"].state_dict()
-            },
+            "model": {"repcodec": self.model["repcodec"].state_dict()},
             "optimizer": {
                 "repcodec": self.optimizer["repcodec"].state_dict(),
             },
@@ -113,10 +109,7 @@ class Trainer:
         torch.save(state_dict, checkpoint_path)
 
     def load_checkpoint(
-            self,
-            checkpoint_path: str,
-            strict: bool = True,
-            load_only_params: bool = False
+        self, checkpoint_path: str, strict: bool = True, load_only_params: bool = False
     ):
         state_dict = torch.load(checkpoint_path, map_location="cpu")
         self.model["repcodec"].load_state_dict(
@@ -166,7 +159,7 @@ class Trainer:
 
         # calculate loss for each batch
         for eval_steps_per_epoch, batch in enumerate(
-                tqdm(self.data_loader["dev"], desc="[eval]"), 1
+            tqdm(self.data_loader["dev"], desc="[eval]"), 1
         ):
             # eval one step
             self._eval_step(batch)
@@ -193,11 +186,13 @@ class Trainer:
         for key in self.model.keys():
             self.model[key].train()
 
-    def _metric_loss(self, predict_y, natural_y, mode='train'):
+    def _metric_loss(self, predict_y, natural_y, mode="train"):
         """Metric losses."""
         metric_loss = 0.0
 
-        repr_reconstruct_loss = self.criterion["repr_reconstruct_loss"](predict_y, natural_y)
+        repr_reconstruct_loss = self.criterion["repr_reconstruct_loss"](
+            predict_y, natural_y
+        )
         repr_reconstruct_loss *= self.config["lambda_repr_reconstruct_loss"]
         self._record_loss("reconstruct_loss", repr_reconstruct_loss, mode=mode)
         metric_loss += repr_reconstruct_loss
@@ -216,14 +211,14 @@ class Trainer:
         self.optimizer["repcodec"].step()
         self.scheduler["repcodec"].step()
 
-    def _record_loss(self, name: str, loss, mode='train'):
+    def _record_loss(self, name: str, loss, mode="train"):
         """Record loss."""
         if torch.is_tensor(loss):
             loss = loss.item()
 
-        if mode == 'train':
+        if mode == "train":
             self.total_train_loss[f"train/{name}"] += loss
-        elif mode == 'eval':
+        elif mode == "eval":
             self.total_eval_loss[f"eval/{name}"] += loss
         else:
             raise NotImplementedError(f"Mode ({mode}) is not supported!")
@@ -263,7 +258,7 @@ class Trainer:
             self.finish_train = False
         return self.finish_train
 
-    def _perplexity(self, perplexity, label=None, mode='train'):
+    def _perplexity(self, perplexity, label=None, mode="train"):
         if label:
             name = f"{mode}/ppl_{label}"
         else:
@@ -275,7 +270,7 @@ class Trainer:
         else:
             self._record_loss(name, perplexity, mode=mode)
 
-    def _vq_loss(self, vqloss, label=None, mode='train'):
+    def _vq_loss(self, vqloss, label=None, mode="train"):
         if label:
             name = f"{mode}/vqloss_{label}"
         else:

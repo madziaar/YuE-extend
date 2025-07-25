@@ -38,17 +38,17 @@
 # SOFTWARE.
 
 """Core vector quantization implementation."""
+
 import typing as tp
 
-from einops import rearrange, repeat
 import torch
-from torch import nn
-import torch.nn.functional as F
 import torch.distributed as dist
-
-from .distrib import broadcast_tensors, rank, is_distributed
-from utils.utils import is_primary
+import torch.nn.functional as F
+from einops import rearrange, repeat
+from torch import nn
 from utils.ddp_utils import SyncFunction
+
+from .distrib import broadcast_tensors, is_distributed
 
 
 def default(val: tp.Any, d: tp.Any) -> tp.Any:
@@ -80,8 +80,10 @@ def sample_vectors(samples, num: int):
     return samples[indices]
 
 
-def kmeans(samples, num_clusters: int, num_iters: int = 10, frames_to_use: int = 10_000):
-    """ Run K-means clustering on samples.
+def kmeans(
+    samples, num_clusters: int, num_iters: int = 10, frames_to_use: int = 10_000
+):
+    """Run K-means clustering on samples.
     Args:
         samples (tensor): shape [B * T, D]
         num_clusters (int): number of centroids.
@@ -96,10 +98,8 @@ def kmeans(samples, num_clusters: int, num_iters: int = 10, frames_to_use: int =
     means = sample_vectors(samples, num_clusters)
 
     for _ in range(num_iters):
-        diffs = rearrange(samples, "n d -> n () d") - rearrange(
-            means, "c d -> () c d"
-        )
-        dists = -(diffs ** 2).sum(dim=-1)
+        diffs = rearrange(samples, "n d -> n () d") - rearrange(means, "c d -> () c d")
+        dists = -(diffs**2).sum(dim=-1)
 
         buckets = dists.max(dim=-1).indices
         bins = torch.bincount(buckets, minlength=num_clusters)
@@ -130,6 +130,7 @@ class EuclideanCodebook(nn.Module):
             that have an exponential moving average cluster size less than the specified threshold with
             randomly selected vector from the current batch.
     """
+
     def __init__(
         self,
         dim: int,
@@ -142,7 +143,9 @@ class EuclideanCodebook(nn.Module):
     ):
         super().__init__()
         self.decay = decay
-        init_fn: tp.Union[tp.Callable[..., torch.Tensor], tp.Any] = uniform_init if not kmeans_init else torch.zeros
+        init_fn: tp.Union[tp.Callable[..., torch.Tensor], tp.Any] = (
+            uniform_init if not kmeans_init else torch.zeros
+        )
         embed = init_fn(codebook_size, dim)
 
         self.codebook_size = codebook_size
@@ -150,7 +153,7 @@ class EuclideanCodebook(nn.Module):
         self.kmeans_iters = kmeans_iters
         self.epsilon = epsilon
         self.threshold_ema_dead_code = threshold_ema_dead_code
-        
+
         # Flag variable to indicate whether the codebook is initialized
         self.register_buffer("inited", torch.Tensor([not kmeans_init]))
         # Runing EMA cluster size/count: N_i^t in eq. (6) in vqvae paper
@@ -162,7 +165,7 @@ class EuclideanCodebook(nn.Module):
 
     @torch.jit.ignore
     def init_embed_(self, data):
-        """ Initialize codebook.
+        """Initialize codebook.
         Args:
             data (tensor): [B * T, D].
         """
@@ -170,15 +173,15 @@ class EuclideanCodebook(nn.Module):
             return
 
         # if is_primary():
-            # print(data.shape)
-        
+        # print(data.shape)
+
         ## NOTE (snippet added by Songxiang Liu): gather data from all gpus
         if dist.is_available() and dist.is_initialized():
             # [B * T * world_size, D]
             data = SyncFunction.apply(data)
 
         # if is_primary():
-            # print(data.shape)
+        # print(data.shape)
 
         embed, cluster_size = kmeans(data, self.codebook_size, self.kmeans_iters)
         self.embed.data.copy_(embed)
@@ -203,7 +206,7 @@ class EuclideanCodebook(nn.Module):
             return
 
         # if is_primary():
-            # print(batch_samples.shape)
+        # print(batch_samples.shape)
 
         ## NOTE (snippet added by Songxiang Liu): gather data from all gpus
         if is_distributed():
@@ -211,7 +214,7 @@ class EuclideanCodebook(nn.Module):
             batch_samples = SyncFunction.apply(batch_samples)
 
         # if is_primary():
-            # print(batch_samples.shape)
+        # print(batch_samples.shape)
 
         batch_samples = rearrange(batch_samples, "... d -> (...) d")
         self.replace_(batch_samples, mask=expired_codes)
@@ -241,7 +244,7 @@ class EuclideanCodebook(nn.Module):
     def encode(self, x):
         shape = x.shape
         # pre-process
-        x = self.preprocess(x) # [B, T, D] -> [B*T, D]
+        x = self.preprocess(x)  # [B, T, D] -> [B*T, D]
         # quantize
         embed_ind = self.quantize(x)
         # post-process
@@ -255,39 +258,45 @@ class EuclideanCodebook(nn.Module):
     def forward(self, x):
         # shape: [B, T, D]
         shape, dtype = x.shape, x.dtype
-        x = self.preprocess(x) # [B, T, D] -> [B*T, D]
-        
+        x = self.preprocess(x)  # [B, T, D] -> [B*T, D]
+
         # Initialize codebook
         self.init_embed_(x)
 
-        embed_ind = self.quantize(x) # [B*T,]
-        embed_onehot = F.one_hot(embed_ind, self.codebook_size).type(dtype) # [B*T, cb-size]
-        embed_ind = self.postprocess_emb(embed_ind, shape) # [B, T]
-        quantize = self.dequantize(embed_ind) # [B, T, D]
+        embed_ind = self.quantize(x)  # [B*T,]
+        embed_onehot = F.one_hot(embed_ind, self.codebook_size).type(
+            dtype
+        )  # [B*T, cb-size]
+        embed_ind = self.postprocess_emb(embed_ind, shape)  # [B, T]
+        quantize = self.dequantize(embed_ind)  # [B, T, D]
 
         if self.training:
             ### Update codebook by EMA
-            embed_onehot_sum = embed_onehot.sum(0) # [cb-size,]
-            embed_sum = x.t() @ embed_onehot # [D, cb-size]
+            embed_onehot_sum = embed_onehot.sum(0)  # [cb-size,]
+            embed_sum = x.t() @ embed_onehot  # [D, cb-size]
             # if is_primary():
-                # print("--------- 1 ---------")
-                # print(embed_onehot_sum[:10])
+            # print("--------- 1 ---------")
+            # print(embed_onehot_sum[:10])
             if is_distributed():
                 dist.all_reduce(embed_onehot_sum)
                 dist.all_reduce(embed_sum)
             # if is_primary():
-                # print(embed_onehot_sum[:10])
-                # print("--------- 2 ---------")
+            # print(embed_onehot_sum[:10])
+            # print("--------- 2 ---------")
             # Update ema cluster count N_i^t, eq. (6) in vqvae paper
             self.cluster_size.data.mul_(self.decay).add_(
                 embed_onehot_sum, alpha=1 - self.decay
             )
             # Update ema embed: eq. (7) in vqvae paper
-            self.embed_avg.data.mul_(self.decay).add_(embed_sum.t(), alpha=1 - self.decay)
+            self.embed_avg.data.mul_(self.decay).add_(
+                embed_sum.t(), alpha=1 - self.decay
+            )
             # apply laplace smoothing
             n = self.cluster_size.sum()
             cluster_size = (
-                (self.cluster_size + self.epsilon) / (n + self.codebook_size * self.epsilon) * n
+                (self.cluster_size + self.epsilon)
+                / (n + self.codebook_size * self.epsilon)
+                * n
             )
             # Update ema embed: eq. (8) in vqvae paper
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
@@ -316,6 +325,7 @@ class VectorQuantization(nn.Module):
             randomly selected vector from the current batch.
         commitment_weight (float): Weight for commitment loss.
     """
+
     def __init__(
         self,
         dim: int,
@@ -326,22 +336,31 @@ class VectorQuantization(nn.Module):
         kmeans_init: bool = True,
         kmeans_iters: int = 50,
         threshold_ema_dead_code: int = 2,
-        commitment_weight: float = 1.,
+        commitment_weight: float = 1.0,
     ):
         super().__init__()
         _codebook_dim: int = default(codebook_dim, dim)
 
         requires_projection = _codebook_dim != dim
-        self.project_in = (nn.Linear(dim, _codebook_dim) if requires_projection else nn.Identity())
-        self.project_out = (nn.Linear(_codebook_dim, dim) if requires_projection else nn.Identity())
+        self.project_in = (
+            nn.Linear(dim, _codebook_dim) if requires_projection else nn.Identity()
+        )
+        self.project_out = (
+            nn.Linear(_codebook_dim, dim) if requires_projection else nn.Identity()
+        )
 
         self.epsilon = epsilon
         self.commitment_weight = commitment_weight
 
-        self._codebook = EuclideanCodebook(dim=_codebook_dim, codebook_size=codebook_size,
-                                           kmeans_init=kmeans_init, kmeans_iters=kmeans_iters,
-                                           decay=decay, epsilon=epsilon,
-                                           threshold_ema_dead_code=threshold_ema_dead_code)
+        self._codebook = EuclideanCodebook(
+            dim=_codebook_dim,
+            codebook_size=codebook_size,
+            kmeans_init=kmeans_init,
+            kmeans_iters=kmeans_iters,
+            decay=decay,
+            epsilon=epsilon,
+            threshold_ema_dead_code=threshold_ema_dead_code,
+        )
         self.codebook_size = codebook_size
 
     @property
@@ -386,6 +405,7 @@ class ResidualVectorQuantization(nn.Module):
     """Residual vector quantization implementation.
     Follows Algorithm 1. in https://arxiv.org/pdf/2107.03312.pdf
     """
+
     def __init__(self, *, num_quantizers, **kwargs):
         super().__init__()
         self.layers = nn.ModuleList(

@@ -3,8 +3,7 @@ from typing import List
 
 import torch
 import torch.nn.functional as F
-from audiotools import AudioSignal
-from audiotools import STFTParams
+from audiotools import AudioSignal, STFTParams
 from torch import nn
 
 
@@ -365,4 +364,4 @@ class GANLoss(nn.Module):
         for i in range(len(d_fake)):
             for j in range(len(d_fake[i]) - 1):
                 loss_feature += F.l1_loss(d_fake[i][j], d_real[i][j].detach())
-        return loss_g+2* loss_feature
+        return loss_g + 2 * loss_feature

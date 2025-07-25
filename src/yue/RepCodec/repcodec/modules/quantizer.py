@@ -6,22 +6,19 @@
 # Based on AudioDec (https://github.com/facebookresearch/AudioDec)
 
 import torch.nn as nn
-
 from repcodec.layers.vq_module import ResidualVQ
 
 
 class Quantizer(nn.Module):
     def __init__(
-            self,
-            code_dim: int,
-            codebook_num: int,
-            codebook_size: int,
+        self,
+        code_dim: int,
+        codebook_num: int,
+        codebook_size: int,
     ):
         super().__init__()
         self.codebook = ResidualVQ(
-            dim=code_dim,
-            num_quantizers=codebook_num,
-            codebook_size=codebook_size
+            dim=code_dim, num_quantizers=codebook_num, codebook_size=codebook_size
         )
 
     def initial(self):

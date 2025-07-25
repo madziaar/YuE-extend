@@ -7,14 +7,13 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
 import yaml
-from tqdm import tqdm
-
 from repcodec.RepCodec import RepCodec
+from tqdm import tqdm
 
 ALL_MODELS = {
     "data2vec_base_l6": 768,
@@ -22,59 +21,50 @@ ALL_MODELS = {
     "hubert_base_l9": 768,
     "hubert_large_l18": 1024,
     "whisper_medium_l24": 1024,
-    "whisper_large_l32": 1280
+    "whisper_large_l32": 1280,
 }
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "in_dir",
-        type=str,
-        help="directory of representations to be tokenized."
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "--model",
-        required=True,
-        type=str,
-        help="path of the RepCodec model."
+        "in_dir", type=str, help="directory of representations to be tokenized."
     )
     parser.add_argument(
-        "--tsv_path",
-        required=True,
-        type=str,
-        help="path of the tsv file."
+        "--model", required=True, type=str, help="path of the RepCodec model."
+    )
+    parser.add_argument(
+        "--tsv_path", required=True, type=str, help="path of the tsv file."
     )
     parser.add_argument(
         "--model_config_path",
         default=None,
         type=str,
-        help="please provide this training config if you are using the model you trained yourself."
+        help="please provide this training config if you are using the model you trained yourself.",
     )
     parser.add_argument(
         "--n_shard",
         required=False,
         type=int,
         default=1,
-        help="number of shards of representations."
+        help="number of shards of representations.",
     )
     parser.add_argument(
         "--use_gpu",
         default=False,
         action="store_true",
-        help="whether use gpu for inference."
+        help="whether use gpu for inference.",
     )
     parser.add_argument(
         "--batch_size",
         default=1,
         type=int,
-        help="number of utterances for each mini batch."
+        help="number of utterances for each mini batch.",
     )
     parser.add_argument(
-        "--out_dir",
-        type=str,
-        default=".",
-        help="the directory to save the output."
+        "--out_dir", type=str, default=".", help="the directory to save the output."
     )
     return parser.parse_args()
 
@@ -82,9 +72,13 @@ def parse_args():
 def load_model(model_path: str, config_path: Optional[str] = None):
     if config_path is None:
         name = os.path.basename(model_path).strip(".pkl")
-        assert name in ALL_MODELS.keys(), f"Cannot find configs for {model_path}. " \
-                                          f"Please provide the config file you used for training."
-        config = os.path.join(os.path.dirname(__file__), "configs", f"repcodec_dim{ALL_MODELS[name]}.yaml")
+        assert name in ALL_MODELS.keys(), (
+            f"Cannot find configs for {model_path}. "
+            f"Please provide the config file you used for training."
+        )
+        config = os.path.join(
+            os.path.dirname(__file__), "configs", f"repcodec_dim{ALL_MODELS[name]}.yaml"
+        )
         with open(config) as fp:
             conf = yaml.load(fp, Loader=yaml.FullLoader)
     else:
@@ -92,7 +86,9 @@ def load_model(model_path: str, config_path: Optional[str] = None):
             conf = yaml.load(fp, Loader=yaml.FullLoader)["model_params"]
 
     model = RepCodec(**conf)
-    model.load_state_dict(torch.load(model_path, map_location="cpu")["model"]["repcodec"])
+    model.load_state_dict(
+        torch.load(model_path, map_location="cpu")["model"]["repcodec"]
+    )
     model.quantizer.initial()
     model.eval()
     return model
@@ -126,19 +122,21 @@ def make_batch_data(data: np.ndarray, shard_lengths: List[int], batch_size: int)
     # from longest to shortest
     for i in range(len(shard_lengths)):
         if batch_size > len(batch_data):
-            batch_data.append(data[offsets[i]: offsets[i + 1]])
+            batch_data.append(data[offsets[i] : offsets[i + 1]])
             batch_lens.append(shard_lengths[i])
         else:
             yield {
-                "data": torch.tensor(np.stack(pad_data(batch_data)), dtype=torch.float),  # (bsz, seq len, hidden dim)
-                "lengths": batch_lens
+                "data": torch.tensor(
+                    np.stack(pad_data(batch_data)), dtype=torch.float
+                ),  # (bsz, seq len, hidden dim)
+                "lengths": batch_lens,
             }
-            batch_data = [data[offsets[i]: offsets[i + 1]]]
+            batch_data = [data[offsets[i] : offsets[i + 1]]]
             batch_lens = [shard_lengths[i]]
     if len(batch_data) > 0:
         yield {
             "data": torch.tensor(np.stack(pad_data(batch_data)), dtype=torch.float),
-            "lengths": batch_lens
+            "lengths": batch_lens,
         }
 
 
@@ -194,19 +192,25 @@ def cli():
 
         for rank in range(n_shard):
             shard_data, shard_lengths = load_shard(in_dir, rank, n_shard)
-            for batch in make_batch_data(shard_data, shard_lengths, batch_size=batch_size):
+            for batch in make_batch_data(
+                shard_data, shard_lengths, batch_size=batch_size
+            ):
                 batch_tokens = tokenize_batch(model, batch, device)
 
                 for tokens in batch_tokens:
-                    fp.write(f"{file_names[processed_cnt]}\t{' '.join(map(str, tokens))}\n")
+                    fp.write(
+                        f"{file_names[processed_cnt]}\t{' '.join(map(str, tokens))}\n"
+                    )
                     processed_cnt += 1
 
                 pbar.update(len(batch_tokens))
-    assert processed_cnt == len(file_names), f"# lines of tsv do not match # of representations!"
+    assert processed_cnt == len(file_names), (
+        "# lines of tsv do not match # of representations!"
+    )
 
     pbar.close()
     print("Tokenize successfully!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
