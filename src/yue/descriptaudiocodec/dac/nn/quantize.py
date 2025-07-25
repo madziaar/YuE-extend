@@ -4,8 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dac.nn.layers import WNConv1d
 from einops import rearrange
+
+from dac.nn.layers import WNConv1d
 
 
 class VectorQuantize(nn.Module):

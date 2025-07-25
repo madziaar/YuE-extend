@@ -176,20 +176,6 @@ format_code() {
     log_info "Formatting code with black..."
     
     local cmd="black"
-    local exclude_args=""
-    
-    # Build exclude pattern for black
-    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-        if [[ -n "$exclude_args" ]]; then
-            exclude_args="$exclude_args|$pattern"
-        else
-            exclude_args="$pattern"
-        fi
-    done
-    
-    if [[ -n "$exclude_args" ]]; then
-        cmd="$cmd --extend-exclude '($exclude_args)'"
-    fi
     
     if [[ "$DRY_RUN" == "true" ]]; then
         cmd="$cmd --check --diff"
@@ -199,14 +185,27 @@ format_code() {
         cmd="$cmd --verbose"
     fi
     
-    eval "$cmd ." || {
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_warning "Code formatting issues found (dry-run mode)"
-        else
-            log_error "Failed to format code"
-            return 1
-        fi
-    }
+    # Use configuration from pyproject.toml if available, otherwise use simple exclude
+    if [[ -f "pyproject.toml" ]]; then
+        eval "$cmd ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Code formatting issues found (dry-run mode)"
+            else
+                log_error "Failed to format code"
+                return 1
+            fi
+        }
+    else
+        # Simple exclude without complex regex
+        eval "$cmd --exclude 'build/|dist/|workspace/' ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Code formatting issues found (dry-run mode)"
+            else
+                log_error "Failed to format code"
+                return 1
+            fi
+        }
+    fi
     
     log_success "Code formatting completed"
 }

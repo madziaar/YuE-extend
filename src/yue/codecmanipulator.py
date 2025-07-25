@@ -4,7 +4,7 @@ import einops
 import numpy as np
 
 
-class CodecManipulator(object):
+class CodecManipulator:
     r"""
     **mm tokenizer v0.1**
     see codeclm/hf/mm_tokenizer_v0.1_hf/id2vocab.json

@@ -70,7 +70,7 @@ def process_audio(input_file, output_file, rescale, device, decoder, soundstream
 
 def find_matching_pairs(input_folder):
     if str(input_folder).endswith(".lst"):  # Convert to string
-        with open(input_folder, "r") as file:
+        with open(input_folder) as file:
             files = [line.strip() for line in file if line.strip()]
     else:
         files = list(Path(input_folder).glob("*.npy"))

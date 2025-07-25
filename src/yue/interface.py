@@ -30,8 +30,8 @@ BASE_MODELS_DIR = "workspace/models"
 BASE_OUTPUTS_DIR = "workspace/outputs"
 BASE_INPUTS_DIR = "workspace/inputs"
 # Default Hugging Face models
-DEFAULT_STAGE1_MODEL = f"{BASE_MODELS_DIR}\YuE-s1-7B-anneal-en-cot-exl2-8.0bpw"
-DEFAULT_STAGE2_MODEL = f"{BASE_MODELS_DIR}\YuE-s2-1B-general-exl2-8.0bpw"
+DEFAULT_STAGE1_MODEL = rf"{BASE_MODELS_DIR}\YuE-s1-7B-anneal-en-cot-exl2-8.0bpw"
+DEFAULT_STAGE2_MODEL = rf"{BASE_MODELS_DIR}\YuE-s2-1B-general-exl2-8.0bpw"
 TOKENIZER_MODEL = f"{BASE_YUE_DIR}/mm_tokenizer_v0.2_hf/tokenizer.model"
 
 sys.path.append(os.path.join("xcodec_mini_infer"))
@@ -42,10 +42,10 @@ os.makedirs(BASE_OUTPUTS_DIR, exist_ok=True)
 
 os.makedirs(BASE_INPUTS_DIR, exist_ok=True)
 
-with open("prompt_egs/lyrics.txt", mode="r") as lyrics_example_file:
+with open("prompt_egs/lyrics.txt") as lyrics_example_file:
     lyrics_example = lyrics_example_file.read()
 
-with open("prompt_egs/genre.txt", mode="r") as genre_example_file:
+with open("prompt_egs/genre.txt") as genre_example_file:
     genre_example = genre_example_file.read()  # not populating gradio
 
 # -------------------------------------------------
@@ -115,7 +115,7 @@ def load_and_process_genres(json_path):
     removes duplicates (case insensitive), and returns a sorted list of unique values.
     """
     # Load JSON data
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         data = json.load(f)
 
     # Combine all relevant categories into a single list

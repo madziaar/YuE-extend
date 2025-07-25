@@ -31,38 +31,28 @@ class AbstractTokenizer(ABC):
 
     def detokenize(self, token_ids):
         raise NotImplementedError(
-            "detokenizer is not implemented for {} tokenizer".format(self.name)
+            f"detokenizer is not implemented for {self.name} tokenizer"
         )
 
     @property
     def cls(self):
-        raise NotImplementedError(
-            "CLS is not provided for {} tokenizer".format(self.name)
-        )
+        raise NotImplementedError(f"CLS is not provided for {self.name} tokenizer")
 
     @property
     def sep(self):
-        raise NotImplementedError(
-            "SEP is not provided for {} tokenizer".format(self.name)
-        )
+        raise NotImplementedError(f"SEP is not provided for {self.name} tokenizer")
 
     @property
     def pad(self):
-        raise NotImplementedError(
-            "PAD is not provided for {} tokenizer".format(self.name)
-        )
+        raise NotImplementedError(f"PAD is not provided for {self.name} tokenizer")
 
     @property
     def eod(self):
-        raise NotImplementedError(
-            "EOD is not provided for {} tokenizer".format(self.name)
-        )
+        raise NotImplementedError(f"EOD is not provided for {self.name} tokenizer")
 
     @property
     def mask(self):
-        raise NotImplementedError(
-            "MASK is not provided for {} tokenizer".format(self.name)
-        )
+        raise NotImplementedError(f"MASK is not provided for {self.name} tokenizer")
 
 
 class _SentencePieceTokenizer(AbstractTokenizer):
@@ -135,7 +125,7 @@ class _SentencePieceTokenizer(AbstractTokenizer):
         self._eos_id = self._vocab[eos_token]
 
         for i in range(vocab_extra_ids):
-            t = "<extra_id_{}>".format(i)
+            t = f"<extra_id_{i}>"
             _add_special_token(t)
             self._t5_tokens += [t]
 
@@ -320,7 +310,7 @@ class _MMSentencePieceTokenizer(_SentencePieceTokenizer):
         self._eos_id = self._vocab[eos_token]
 
         for i in range(vocab_extra_ids):
-            t = "<extra_id_{}>".format(i)
+            t = f"<extra_id_{i}>"
             _add_special_token(t)
             self._t5_tokens += [t]
 

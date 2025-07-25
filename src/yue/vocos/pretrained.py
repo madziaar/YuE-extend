@@ -54,7 +54,7 @@ class Vocos(nn.Module):
         """
         Class method to create a new Vocos model instance from hyperparameters stored in a yaml configuration file.
         """
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
         feature_extractor = instantiate_class(args=(), init=config["feature_extractor"])
         backbone = instantiate_class(args=(), init=config["backbone"])
@@ -174,7 +174,7 @@ class VocosDecoder(nn.Module):
         """
         Class method to create a new Vocos model instance from hyperparameters stored in a yaml configuration file.
         """
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
         backbone = instantiate_class(args=(), init=config["backbone"])
         head = instantiate_class(args=(), init=config["head"])
