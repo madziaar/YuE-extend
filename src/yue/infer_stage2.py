@@ -1,19 +1,19 @@
 import copy
+import gc
 import math
 import os
-import sys
 from collections import Counter
 
 import numpy as np
 import torch
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from mmtokenizer import _MMSentencePieceTokenizer
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, LogitsProcessorList
 from transformers.cache_utils import StaticCache
-import gc
+
+from common import BlockTokenRangeProcessor, get_cache_class, parser, seed_everything
 
 
 def align(n, m):
@@ -24,7 +24,9 @@ def split_bsz(bsz, maxbsz):
     n_sub_batches = math.ceil(bsz / maxbsz)
     base_size = bsz // n_sub_batches
     remainder = bsz % n_sub_batches
-    sub_batch_sizes = [base_size + 1] * remainder + [base_size] * (n_sub_batches - remainder)
+    sub_batch_sizes = [base_size + 1] * remainder + [base_size] * (
+        n_sub_batches - remainder
+    )
     indices = []
     start = 0
     for size in sub_batch_sizes:
@@ -35,7 +37,6 @@ def split_bsz(bsz, maxbsz):
 
 
 class Stage2Pipeline:
-
     def __init__(self, device: torch.device):
         self.device = device
 
@@ -43,12 +44,21 @@ class Stage2Pipeline:
         self.codec_tool_stage2 = CodecManipulator("xcodec", 0, 8)
 
         # Load tokenizer
-        self.mmtokenizer = _MMSentencePieceTokenizer(os.path.join(os.path.dirname(os.path.abspath(__file__)), "mm_tokenizer_v0.2_hf", "tokenizer.model"))
+        self.mmtokenizer = _MMSentencePieceTokenizer(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "mm_tokenizer_v0.2_hf",
+                "tokenizer.model",
+            )
+        )
 
     def get_codec_ids(self, prompt: np.array):
         codec_ids = self.codec_tool.unflatten(prompt, n_quantizer=1)
         codec_ids = self.codec_tool.offset_tok_ids(
-            codec_ids, global_offset=self.codec_tool.global_offset, codebook_size=self.codec_tool.codebook_size, num_codebooks=self.codec_tool.num_codebooks
+            codec_ids,
+            global_offset=self.codec_tool.global_offset,
+            codebook_size=self.codec_tool.codebook_size,
+            num_codebooks=self.codec_tool.num_codebooks,
         ).astype(np.int32)
         return codec_ids
 
@@ -60,7 +70,9 @@ class Stage2Pipeline:
             for j, element in enumerate(line):
                 if element < 0 or element > 1023:
                     counter = Counter(line)
-                    most_frequant = sorted(counter.items(), key=lambda x: x[1], reverse=True)[0][0]
+                    most_frequant = sorted(
+                        counter.items(), key=lambda x: x[1], reverse=True
+                    )[0][0]
                     fixed_output[i, j] = most_frequant
         return fixed_output
 
@@ -78,7 +90,6 @@ class Stage2Pipeline:
         return prompt
 
     def prepare_prompt_batch(self, prompt: np.array, batch_size: int):
-
         codec_ids = self.get_codec_ids(prompt)
 
         # Prepare prompt_ids based on batch size or single input
@@ -91,7 +102,14 @@ class Stage2Pipeline:
 
             codec_ids = np.concatenate(codec_list, axis=0)
             prompt_ids = np.concatenate(
-                [np.tile([self.mmtokenizer.soa, self.mmtokenizer.stage_1], (batch_size, 1)), codec_ids, np.tile([self.mmtokenizer.stage_2], (batch_size, 1))],
+                [
+                    np.tile(
+                        [self.mmtokenizer.soa, self.mmtokenizer.stage_1],
+                        (batch_size, 1),
+                    ),
+                    codec_ids,
+                    np.tile([self.mmtokenizer.stage_2], (batch_size, 1)),
+                ],
                 axis=1,
             )
         else:
@@ -110,12 +128,13 @@ class Stage2Pipeline:
 
 
 class Stage2Pipeline_HF(Stage2Pipeline):
-
     def __init__(self, model_path: str, device: torch.device, batch_size: int):
         super().__init__(device)
         self.batch_size = batch_size
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, attn_implementation="sdpa")
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype=torch.float16, attn_implementation="sdpa"
+        )
         self.model.to(device)
         self.model.eval()
         if torch.__version__ >= "2.0.0":
@@ -128,7 +147,12 @@ class Stage2Pipeline_HF(Stage2Pipeline):
         # Teacher forcing generate loop
         codec_ids = codec_ids.to(self.device)
         prompt_ids = prompt_ids.to(self.device)
-        block_list = LogitsProcessorList([BlockTokenRangeProcessor(0, 46358), BlockTokenRangeProcessor(53526, self.mmtokenizer.vocab_size)])
+        block_list = LogitsProcessorList(
+            [
+                BlockTokenRangeProcessor(0, 46358),
+                BlockTokenRangeProcessor(53526, self.mmtokenizer.vocab_size),
+            ]
+        )
         past_key_values = StaticCache(
             self.model.config,
             max_batch_size=batch_size,
@@ -151,7 +175,9 @@ class Stage2Pipeline_HF(Stage2Pipeline):
                 past_key_values=past_key_values,
             )
 
-            assert stage2_output.shape[1] - prompt_ids.shape[1] == 7, f"output new tokens={stage2_output.shape[1]-prompt_ids.shape[1]}"
+            assert stage2_output.shape[1] - prompt_ids.shape[1] == 7, (
+                f"output new tokens={stage2_output.shape[1] - prompt_ids.shape[1]}"
+            )
             prompt_ids = stage2_output
 
         # Return output based on batch size
@@ -176,18 +202,30 @@ class Stage2Pipeline_HF(Stage2Pipeline):
 
             if num_batch <= self.batch_size:
                 # If num_batch is less than or equal to batch_size, we can infer the entire prompt at once
-                output = self.generate_batch(prompt[:, : output_duration * 50], batch_size=num_batch)
+                output = self.generate_batch(
+                    prompt[:, : output_duration * 50], batch_size=num_batch
+                )
             else:
                 # If num_batch is greater than batch_size, process in chunks of batch_size
                 segments = []
-                num_segments = (num_batch // self.batch_size) + (1 if num_batch % self.batch_size != 0 else 0)
+                num_segments = (num_batch // self.batch_size) + (
+                    1 if num_batch % self.batch_size != 0 else 0
+                )
 
                 for seg in range(num_segments):
                     start_idx = seg * self.batch_size * 300
                     # Ensure the end_idx does not exceed the available length
-                    end_idx = min((seg + 1) * self.batch_size * 300, output_duration * 50)  # Adjust the last segment
-                    current_batch_size = self.batch_size if seg != num_segments - 1 or num_batch % self.batch_size == 0 else num_batch % self.batch_size
-                    segment = self.generate_batch(prompt[:, start_idx:end_idx], batch_size=current_batch_size)
+                    end_idx = min(
+                        (seg + 1) * self.batch_size * 300, output_duration * 50
+                    )  # Adjust the last segment
+                    current_batch_size = (
+                        self.batch_size
+                        if seg != num_segments - 1 or num_batch % self.batch_size == 0
+                        else num_batch % self.batch_size
+                    )
+                    segment = self.generate_batch(
+                        prompt[:, start_idx:end_idx], batch_size=current_batch_size
+                    )
                     segments.append(segment)
 
                 # Concatenate all the segments
@@ -195,7 +233,9 @@ class Stage2Pipeline_HF(Stage2Pipeline):
 
             # Process the ending part of the prompt
             if output_duration * 50 != prompt.shape[-1]:
-                ending = self.generate_batch(prompt[:, output_duration * 50 :], batch_size=1)
+                ending = self.generate_batch(
+                    prompt[:, output_duration * 50 :], batch_size=1
+                )
                 output = np.concatenate([output, ending], axis=0)
 
             output = self.codec_tool_stage2.ids2npy(output)
@@ -206,8 +246,14 @@ class Stage2Pipeline_HF(Stage2Pipeline):
 
 
 class Stage2Pipeline_EXL2(Stage2Pipeline):
-
-    def __init__(self, model_path: str, device: torch.device, cache_size: int, cache_mode: str, no_flash_attn: bool):
+    def __init__(
+        self,
+        model_path: str,
+        device: torch.device,
+        cache_size: int,
+        cache_mode: str,
+        no_flash_attn: bool,
+    ):
         super().__init__(device)
 
         self.cache_size = cache_size
@@ -220,8 +266,8 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         gpu_split[device_idx] = 9999
         exl2_config = ExLlamaV2Config(model_path)
         if no_flash_attn:
-            exl2_config.no_flash_attn = True # for old devices, 2000 series and older
-        self.model = ExLlamaV2(exl2_config)        
+            exl2_config.no_flash_attn = True  # for old devices, 2000 series and older
+        self.model = ExLlamaV2(exl2_config)
         self.model.load(gpu_split)
 
         # Move embedding layer to GPU to avoid CPU sync during argmax gen loop
@@ -235,7 +281,6 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         self.cache_mode = get_cache_class(cache_mode)
 
     def generate(self, output_dir: str) -> dict[str, np.array]:
-
         parts = ["vtrack.npy", "itrack.npy"]
         full_batch = []
 
@@ -252,7 +297,9 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
                 full_batch.append((seg_len, seg_idx, output_idx, seg))
 
         # Prepare segments
-        prefix = torch.tensor([[self.mmtokenizer.soa, self.mmtokenizer.stage_1]], dtype=torch.long)
+        prefix = torch.tensor(
+            [[self.mmtokenizer.soa, self.mmtokenizer.stage_1]], dtype=torch.long
+        )
         suffix = torch.tensor([[self.mmtokenizer.stage_2]], dtype=torch.long)
         for i in range(len(full_batch)):
             seg_len, seg_idx, output_idx, codec_ids = full_batch[i]
@@ -262,7 +309,7 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         # Group prompts by length
         batches = {}
         for seq in full_batch:
-            if not seq[0] in batches:
+            if seq[0] not in batches:
                 batches[seq[0]] = []
             batches[seq[0]].append(seq)
 
@@ -274,23 +321,40 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
             b_codec_ids = torch.cat([b[3] for b in batch], dim=0)
             b_prompt_ids = torch.cat([b[4] for b in batch], dim=0)
 
-            max_bsz = self.cache_size // align(b_prompt_ids.shape[1] + b_codec_ids.shape[1] * 8, 32)
+            max_bsz = self.cache_size // align(
+                b_prompt_ids.shape[1] + b_codec_ids.shape[1] * 8, 32
+            )
             assert max_bsz > 0
             for a, b in split_bsz(b_prompt_ids.shape[0], max_bsz):
-                split_batch.append((b_seg_order[a:b], b_part_order[a:b], b_codec_ids[a:b], b_prompt_ids[a:b]))
+                split_batch.append(
+                    (
+                        b_seg_order[a:b],
+                        b_part_order[a:b],
+                        b_codec_ids[a:b],
+                        b_prompt_ids[a:b],
+                    )
+                )
 
         # Inference
         output_parts = []
         for _ in parts:
             output_parts.append([])
 
-        for seg_order, part_order, codec_ids, prompt_ids in tqdm(split_batch, mininterval=10):
+        for seg_order, part_order, codec_ids, prompt_ids in tqdm(
+            split_batch, mininterval=10
+        ):
             codec_ids = codec_ids.to(self.device)
             prompt_ids = prompt_ids.to(self.device)
             batch_size, len_prompt = prompt_ids.shape
 
-            cache = self.cache_mode(self.model, batch_size=batch_size, max_seq_len=align(prompt_ids.shape[1] + codec_ids.shape[1] * 8, 32))
-            output_ids = torch.empty((batch_size, 0), dtype=torch.long, device=self.device)
+            cache = self.cache_mode(
+                self.model,
+                batch_size=batch_size,
+                max_seq_len=align(prompt_ids.shape[1] + codec_ids.shape[1] * 8, 32),
+            )
+            output_ids = torch.empty(
+                (batch_size, 0), dtype=torch.long, device=self.device
+            )
 
             for frames_idx in tqdm(range(codec_ids.shape[1]), mininterval=10):
                 cb0 = codec_ids[:, frames_idx : frames_idx + 1]
@@ -304,7 +368,6 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
                 logits = self.model.forward(cb0, cache=cache, last_id_only=True)
 
                 for i in range(7):
-
                     # Slice logits instead of biasing start and end of distribution
                     first_logit = 46358
                     last_logit = 53526
@@ -324,13 +387,15 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
 
             # Split outputs
             for i in range(batch_size):
-                output_parts[part_order[i]].append((seg_order[i], output_ids[i : i + 1, :]))
+                output_parts[part_order[i]].append(
+                    (seg_order[i], output_ids[i : i + 1, :])
+                )
 
             # Release cache tensors
             del cache
             torch.cuda.empty_cache()
             gc.collect()
-            
+
         # Unshuffle and recombine output parts
         output = {}
         for i, p in enumerate(output_parts):
@@ -348,13 +413,25 @@ def main():
     if args.seed is not None:
         seed_everything(args.seed)
 
-    device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu"
+    )
 
     if args.stage2_use_exl2:
-        pipeline = Stage2Pipeline_EXL2(model_path=args.stage2_model, device=device, cache_size=args.stage2_cache_size, cache_mode=args.stage2_cache_mode, no_flash_attn=args.no_flash_attn)
+        pipeline = Stage2Pipeline_EXL2(
+            model_path=args.stage2_model,
+            device=device,
+            cache_size=args.stage2_cache_size,
+            cache_mode=args.stage2_cache_mode,
+            no_flash_attn=args.no_flash_attn,
+        )
         pass
     else:
-        pipeline = Stage2Pipeline_HF(model_path=args.stage2_model, device=device, batch_size=args.stage2_batch_size)
+        pipeline = Stage2Pipeline_HF(
+            model_path=args.stage2_model,
+            device=device,
+            batch_size=args.stage2_batch_size,
+        )
 
     outputs = pipeline.generate(output_dir=args.output_dir)
 

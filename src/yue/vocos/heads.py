@@ -3,9 +3,8 @@ from typing import Optional
 import torch
 from torch import nn
 from torchaudio.functional.functional import _hz_to_mel, _mel_to_hz
-
-from vocos.spectral_ops import IMDCT, ISTFT
 from vocos.modules import symexp
+from vocos.spectral_ops import IMDCT, ISTFT
 
 
 class FourierHead(nn.Module):
@@ -35,11 +34,20 @@ class ISTFTHead(FourierHead):
         padding (str, optional): Type of padding. Options are "center" or "same". Defaults to "same".
     """
 
-    def __init__(self, dim: int, n_fft: int, hop_length: int, padding: str = "same", ckpt: Optional[str] = None):
+    def __init__(
+        self,
+        dim: int,
+        n_fft: int,
+        hop_length: int,
+        padding: str = "same",
+        ckpt: Optional[str] = None,
+    ):
         super().__init__()
         out_dim = n_fft + 2
         self.out = torch.nn.Linear(dim, out_dim)
-        self.istft = ISTFT(n_fft=n_fft, hop_length=hop_length, win_length=n_fft, padding=padding)
+        self.istft = ISTFT(
+            n_fft=n_fft, hop_length=hop_length, win_length=n_fft, padding=padding
+        )
         # load the checkpoint if provided
         if ckpt is not None:
             params = torch.load(ckpt, map_location="cpu")
@@ -61,7 +69,9 @@ class ISTFTHead(FourierHead):
         x = self.out(x).transpose(1, 2)
         mag, p = x.chunk(2, dim=1)
         mag = torch.exp(mag)
-        mag = torch.clip(mag, max=1e2)  # safeguard to prevent excessively large magnitudes
+        mag = torch.clip(
+            mag, max=1e2
+        )  # safeguard to prevent excessively large magnitudes
         # wrapping happens here. These two lines produce real and imaginary value
         x = torch.cos(p)
         y = torch.sin(p)
@@ -69,7 +79,7 @@ class ISTFTHead(FourierHead):
         # only costs time
         # phase = torch.atan2(y, x)
         # S = mag * torch.exp(phase * 1j)
-        # better directly produce the complex value 
+        # better directly produce the complex value
         S = mag * (x + 1j * y)
         audio = self.istft(S)
         return audio
@@ -125,7 +135,9 @@ class IMDCTSymExpHead(FourierHead):
         """
         x = self.out(x)
         x = symexp(x)
-        x = torch.clip(x, min=-1e2, max=1e2)  # safeguard to prevent excessively large magnitudes
+        x = torch.clip(
+            x, min=-1e2, max=1e2
+        )  # safeguard to prevent excessively large magnitudes
         audio = self.imdct(x)
         if self.clip_audio:
             audio = torch.clip(x, min=-1.0, max=1.0)
@@ -144,7 +156,13 @@ class IMDCTCosHead(FourierHead):
         clip_audio (bool, optional): Whether to clip the audio output within the range of [-1.0, 1.0]. Defaults to False.
     """
 
-    def __init__(self, dim: int, mdct_frame_len: int, padding: str = "same", clip_audio: bool = False):
+    def __init__(
+        self,
+        dim: int,
+        mdct_frame_len: int,
+        padding: str = "same",
+        clip_audio: bool = False,
+    ):
         super().__init__()
         self.clip_audio = clip_audio
         self.out = nn.Linear(dim, mdct_frame_len)
@@ -163,7 +181,9 @@ class IMDCTCosHead(FourierHead):
         """
         x = self.out(x)
         m, p = x.chunk(2, dim=2)
-        m = torch.exp(m).clip(max=1e2)  # safeguard to prevent excessively large magnitudes
+        m = torch.exp(m).clip(
+            max=1e2
+        )  # safeguard to prevent excessively large magnitudes
         audio = self.imdct(m * torch.cos(p))
         if self.clip_audio:
             audio = torch.clip(x, min=-1.0, max=1.0)

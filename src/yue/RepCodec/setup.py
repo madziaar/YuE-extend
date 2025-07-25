@@ -19,13 +19,7 @@ setup(
     long_description=long_description,
     url="https://github.com/mct10/RepCodec",
     packages=["repcodec", "repcodec.modules", "repcodec.layers"],
-    package_data={
-        "repcodec": ["configs/*.yaml"]
-    },
+    package_data={"repcodec": ["configs/*.yaml"]},
     install_requires=["numpy", "tqdm", "torch", "tensorboardX", "PyYAML"],
-    entry_points={
-        'console_scripts': [
-            "repcodec=repcodec.tokenize:cli"
-        ]
-    }
+    entry_points={"console_scripts": ["repcodec=repcodec.tokenize:cli"]},
 )

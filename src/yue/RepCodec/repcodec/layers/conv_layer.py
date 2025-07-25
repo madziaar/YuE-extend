@@ -12,20 +12,22 @@ class Conv1d1x1(nn.Conv1d):
     """1x1 Conv1d."""
 
     def __init__(self, in_channels, out_channels, bias=True):
-        super(Conv1d1x1, self).__init__(in_channels, out_channels, kernel_size=1, bias=bias)
+        super(Conv1d1x1, self).__init__(
+            in_channels, out_channels, kernel_size=1, bias=bias
+        )
 
 
 class Conv1d(nn.Module):
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: int,
-            stride: int = 1,
-            padding: int = -1,
-            dilation: int = 1,
-            groups: int = 1,
-            bias: bool = True
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: int = -1,
+        dilation: int = 1,
+        groups: int = 1,
+        bias: bool = True,
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -58,15 +60,15 @@ class Conv1d(nn.Module):
 
 class ConvTranspose1d(nn.Module):
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: int,
-            stride: int,
-            padding=-1,
-            output_padding=-1,
-            groups=1,
-            bias=True,
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int,
+        padding=-1,
+        output_padding=-1,
+        groups=1,
+        bias=True,
     ):
         super().__init__()
         if padding < 0:

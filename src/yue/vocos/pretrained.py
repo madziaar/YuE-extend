@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple, Union, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 import torch
 import yaml
 from huggingface_hub import hf_hub_download
 from torch import nn
-from vocos.feature_extractors import FeatureExtractor, EncodecFeatures
+from vocos.feature_extractors import EncodecFeatures, FeatureExtractor
 from vocos.heads import FourierHead
 from vocos.models import Backbone
 
@@ -39,7 +39,10 @@ class Vocos(nn.Module):
     """
 
     def __init__(
-        self, feature_extractor: FeatureExtractor, backbone: Backbone, head: FourierHead,
+        self,
+        feature_extractor: FeatureExtractor,
+        backbone: Backbone,
+        head: FourierHead,
     ):
         super().__init__()
         self.feature_extractor = feature_extractor
@@ -64,8 +67,12 @@ class Vocos(nn.Module):
         """
         Class method to create a new Vocos model instance from a pre-trained model stored in the Hugging Face model hub.
         """
-        config_path = hf_hub_download(repo_id=repo_id, filename="config.yaml", revision=revision)
-        model_path = hf_hub_download(repo_id=repo_id, filename="pytorch_model.bin", revision=revision)
+        config_path = hf_hub_download(
+            repo_id=repo_id, filename="config.yaml", revision=revision
+        )
+        model_path = hf_hub_download(
+            repo_id=repo_id, filename="pytorch_model.bin", revision=revision
+        )
         model = cls.from_hparams(config_path)
         state_dict = torch.load(model_path, map_location="cpu")
         if isinstance(model.feature_extractor, EncodecFeatures):
@@ -127,9 +134,9 @@ class Vocos(nn.Module):
             Tensor: Features of shape (B, C, L), where B is the batch size, C denotes the feature dimension,
                     and L is the sequence length.
         """
-        assert isinstance(
-            self.feature_extractor, EncodecFeatures
-        ), "Feature extractor should be an instance of EncodecFeatures"
+        assert isinstance(self.feature_extractor, EncodecFeatures), (
+            "Feature extractor should be an instance of EncodecFeatures"
+        )
 
         if codes.dim() == 2:
             codes = codes.unsqueeze(1)
@@ -137,10 +144,13 @@ class Vocos(nn.Module):
         n_bins = self.feature_extractor.encodec.quantizer.bins
         offsets = torch.arange(0, n_bins * len(codes), n_bins, device=codes.device)
         embeddings_idxs = codes + offsets.view(-1, 1, 1)
-        features = torch.nn.functional.embedding(embeddings_idxs, self.feature_extractor.codebook_weights).sum(dim=0)
+        features = torch.nn.functional.embedding(
+            embeddings_idxs, self.feature_extractor.codebook_weights
+        ).sum(dim=0)
         features = features.transpose(1, 2)
 
         return features
+
 
 class VocosDecoder(nn.Module):
     """
@@ -151,7 +161,9 @@ class VocosDecoder(nn.Module):
     """
 
     def __init__(
-        self, backbone: Backbone, head: FourierHead,
+        self,
+        backbone: Backbone,
+        head: FourierHead,
     ):
         super().__init__()
         self.backbone = backbone

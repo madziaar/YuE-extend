@@ -6,7 +6,6 @@
 # Based on AudioDec (https://github.com/facebookresearch/AudioDec)
 
 import torch.nn as nn
-
 from repcodec.modules.decoder import Decoder
 from repcodec.modules.encoder import Encoder
 from repcodec.modules.projector import Projector
@@ -15,25 +14,25 @@ from repcodec.modules.quantizer import Quantizer
 
 class RepCodec(nn.Module):
     def __init__(
-            self,
-            input_channels=768,
-            output_channels=768,
-            encode_channels=768,
-            decode_channels=768,
-            code_dim=768,
-            codebook_num=1,
-            codebook_size=1024,
-            bias=True,
-            enc_ratios=(1, 1),
-            dec_ratios=(1, 1),
-            enc_strides=(1, 1),
-            dec_strides=(1, 1),
-            enc_kernel_size=3,
-            dec_kernel_size=3,
-            enc_block_dilations=(1, 1),
-            enc_block_kernel_size=3,
-            dec_block_dilations=(1, 1),
-            dec_block_kernel_size=3
+        self,
+        input_channels=768,
+        output_channels=768,
+        encode_channels=768,
+        decode_channels=768,
+        code_dim=768,
+        codebook_num=1,
+        codebook_size=1024,
+        bias=True,
+        enc_ratios=(1, 1),
+        dec_ratios=(1, 1),
+        enc_strides=(1, 1),
+        dec_strides=(1, 1),
+        enc_kernel_size=3,
+        dec_kernel_size=3,
+        enc_block_dilations=(1, 1),
+        enc_block_kernel_size=3,
+        dec_block_dilations=(1, 1),
+        dec_block_kernel_size=3,
     ):
         super().__init__()
 
@@ -47,7 +46,7 @@ class RepCodec(nn.Module):
             kernel_size=enc_kernel_size,
             bias=bias,
             block_dilations=enc_block_dilations,
-            unit_kernel_size=enc_block_kernel_size
+            unit_kernel_size=enc_block_kernel_size,
         )
 
         self.decoder = Decoder(
@@ -59,7 +58,7 @@ class RepCodec(nn.Module):
             kernel_size=dec_kernel_size,
             bias=bias,
             block_dilations=dec_block_dilations,
-            unit_kernel_size=dec_block_kernel_size
+            unit_kernel_size=dec_block_kernel_size,
         )
 
         self.projector = Projector(
@@ -67,13 +66,11 @@ class RepCodec(nn.Module):
             code_dim=code_dim,
             kernel_size=3,
             stride=1,
-            bias=False
+            bias=False,
         )
 
         self.quantizer = Quantizer(
-            code_dim=code_dim,
-            codebook_num=codebook_num,
-            codebook_size=codebook_size
+            code_dim=code_dim, codebook_num=codebook_num, codebook_size=codebook_size
         )
 
     def forward(self, x):

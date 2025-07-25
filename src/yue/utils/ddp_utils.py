@@ -6,12 +6,12 @@ from datetime import datetime
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel
-from torch.nn.parallel.distributed import _find_tensors
 import torch.optim
 import torch.utils.data
-from packaging import version
 from omegaconf import OmegaConf
+from packaging import version
+from torch.nn.parallel import DistributedDataParallel
+from torch.nn.parallel.distributed import _find_tensors
 
 
 def set_random_seed(seed):
@@ -41,7 +41,9 @@ class SyncFunction(torch.autograd.Function):
     def forward(ctx, tensor):
         ctx.batch_size = tensor.shape[0]
 
-        gathered_tensor = [torch.zeros_like(tensor) for _ in range(torch.distributed.get_world_size())]
+        gathered_tensor = [
+            torch.zeros_like(tensor) for _ in range(torch.distributed.get_world_size())
+        ]
 
         torch.distributed.all_gather(gathered_tensor, tensor)
         gathered_tensor = torch.cat(gathered_tensor, 0)
@@ -51,7 +53,9 @@ class SyncFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         grad_input = grad_output.clone()
-        torch.distributed.all_reduce(grad_input, op=torch.distributed.ReduceOp.SUM, async_op=False)
+        torch.distributed.all_reduce(
+            grad_input, op=torch.distributed.ReduceOp.SUM, async_op=False
+        )
 
         idx_from = torch.distributed.get_rank() * ctx.batch_size
         idx_to = (torch.distributed.get_rank() + 1) * ctx.batch_size
@@ -94,9 +98,17 @@ class DDP(DistributedDataParallel):
                 else:
                     self.reducer.prepare_for_backward([])
         else:
-            from torch.nn.parallel.distributed import \
-                logging, Join, _DDPSink, _tree_flatten_with_rref, _tree_unflatten_with_rref
-            with torch.autograd.profiler.record_function("DistributedDataParallel.forward"):
+            from torch.nn.parallel.distributed import (
+                Join,
+                _DDPSink,
+                _tree_flatten_with_rref,
+                _tree_unflatten_with_rref,
+                logging,
+            )
+
+            with torch.autograd.profiler.record_function(
+                "DistributedDataParallel.forward"
+            ):
                 if torch.is_grad_enabled() and self.require_backward_grad_sync:
                     self.logger.set_runtime_stats_and_log()
                     self.num_iterations += 1
@@ -122,7 +134,7 @@ class DDP(DistributedDataParallel):
 
                 # sync params according to location (before/after forward) user
                 # specified as part of hook, if hook was specified.
-                buffer_hook_registered = hasattr(self, 'buffer_hook')
+                buffer_hook_registered = hasattr(self, "buffer_hook")
                 if self._check_sync_bufs_pre_fwd():
                     self._sync_buffers()
 
@@ -161,11 +173,11 @@ class DDP(DistributedDataParallel):
             # TODO: DDPSink is currently enabled for unused parameter detection and
             # static graph training for first iteration.
             if (self.find_unused_parameters and not self.static_graph) or (
-                    self.static_graph and self.num_iterations == 1
+                self.static_graph and self.num_iterations == 1
             ):
                 state_dict = {
-                    'static_graph': self.static_graph,
-                    'num_iterations': self.num_iterations,
+                    "static_graph": self.static_graph,
+                    "num_iterations": self.num_iterations,
                 }
 
                 output_tensor_list, treespec, output_is_rref = _tree_flatten_with_rref(
@@ -197,4 +209,3 @@ class DDP(DistributedDataParallel):
                     output_placeholders, treespec, output_is_rref
                 )
         return output
-

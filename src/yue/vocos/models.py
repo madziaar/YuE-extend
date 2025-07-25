@@ -3,8 +3,7 @@ from typing import Optional
 import torch
 from torch import nn
 from torch.nn.utils import weight_norm
-
-from vocos.modules import ConvNeXtBlock, ResBlock1, AdaLayerNorm
+from vocos.modules import AdaLayerNorm, ConvNeXtBlock, ResBlock1
 
 
 class Backbone(nn.Module):
@@ -70,18 +69,18 @@ class VocosBackbone(Backbone):
         self.final_layer_norm = nn.LayerNorm(dim, eps=1e-6)
         # print out self's state dict
         if ckpt is not None:
-            state_dict = torch.load(ckpt, map_location='cpu')
+            state_dict = torch.load(ckpt, map_location="cpu")
             state_dict = self._fuzzy_load_state_dict(state_dict)
             self.load_state_dict(state_dict)
         self.apply(self._init_weights)
 
     def _fuzzy_load_state_dict(self, state_dict):
         def _get_key(key):
-            return key.split('backbone.')[-1]
+            return key.split("backbone.")[-1]
 
         new_state_dict = {}
         for k, v in state_dict.items():
-            if k.startswith('backbone'):
+            if k.startswith("backbone"):
                 if v.shape == self.state_dict()[_get_key(k)].shape:
                     new_state_dict[_get_key(k)] = v
                 else:
@@ -96,7 +95,7 @@ class VocosBackbone(Backbone):
             nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        bandwidth_id = kwargs.get('bandwidth_id', None)
+        bandwidth_id = kwargs.get("bandwidth_id", None)
         x = self.embed(x)
         if self.adanorm:
             assert bandwidth_id is not None
@@ -122,14 +121,23 @@ class VocosResNetBackbone(Backbone):
     """
 
     def __init__(
-        self, input_channels, dim, num_blocks, layer_scale_init_value=None,
+        self,
+        input_channels,
+        dim,
+        num_blocks,
+        layer_scale_init_value=None,
     ):
         super().__init__()
         self.input_channels = input_channels
-        self.embed = weight_norm(nn.Conv1d(input_channels, dim, kernel_size=3, padding=1))
+        self.embed = weight_norm(
+            nn.Conv1d(input_channels, dim, kernel_size=3, padding=1)
+        )
         layer_scale_init_value = layer_scale_init_value or 1 / num_blocks / 3
         self.resnet = nn.Sequential(
-            *[ResBlock1(dim=dim, layer_scale_init_value=layer_scale_init_value) for _ in range(num_blocks)]
+            *[
+                ResBlock1(dim=dim, layer_scale_init_value=layer_scale_init_value)
+                for _ in range(num_blocks)
+            ]
         )
 
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -138,14 +146,15 @@ class VocosResNetBackbone(Backbone):
         x = x.transpose(1, 2)
         return x
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Define the model
     model = VocosBackbone(
         input_channels=1024,
         dim=512,
         intermediate_dim=1536,
         num_layers=8,
-        ckpt="/root/OpenMusicVoco/vocos/pretrained.pth"
+        ckpt="/root/OpenMusicVoco/vocos/pretrained.pth",
     )
 
     # Generate some random input

@@ -1,18 +1,15 @@
 import math
-from typing import List
-from typing import Union
+from typing import List, Union
 
 import numpy as np
 import torch
 from audiotools import AudioSignal
 from audiotools.ml import BaseModel
+from dac.nn.layers import Snake1d, WNConv1d, WNConvTranspose1d
+from dac.nn.quantize import ResidualVectorQuantize
 from torch import nn
 
 from .base import CodecMixin
-from dac.nn.layers import Snake1d
-from dac.nn.layers import WNConv1d
-from dac.nn.layers import WNConvTranspose1d
-from dac.nn.quantize import ResidualVectorQuantize
 
 
 def init_weights(m):
@@ -92,7 +89,9 @@ class Encoder(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, input_dim: int = 16, output_dim: int = 8, stride: int = 1,out_pad=0):
+    def __init__(
+        self, input_dim: int = 16, output_dim: int = 8, stride: int = 1, out_pad=0
+    ):
         super().__init__()
         self.block = nn.Sequential(
             Snake1d(input_dim),
@@ -130,11 +129,11 @@ class Decoder(nn.Module):
         for i, stride in enumerate(rates):
             input_dim = channels // 2**i
             output_dim = channels // 2 ** (i + 1)
-            if i==1:
-                out_pad=1
+            if i == 1:
+                out_pad = 1
             else:
-                out_pad=0
-            layers += [DecoderBlock(input_dim, output_dim, stride,out_pad)]
+                out_pad = 0
+            layers += [DecoderBlock(input_dim, output_dim, stride, out_pad)]
 
         # Add final conv layer
         layers += [
@@ -328,15 +327,16 @@ class DAC(BaseModel, CodecMixin):
 
 
 if __name__ == "__main__":
-    import numpy as np
     from functools import partial
+
+    import numpy as np
 
     model = DAC().to("cpu")
 
     for n, m in model.named_modules():
         o = m.extra_repr()
         p = sum([np.prod(p.size()) for p in m.parameters()])
-        fn = lambda o, p: o + f" {p/1e6:<.3f}M params."
+        fn = lambda o, p: o + f" {p / 1e6:<.3f}M params."
         setattr(m, "extra_repr", partial(fn, o=o, p=p))
     print(model)
     print("Total # of params: ", sum([np.prod(p.size()) for p in model.parameters()]))

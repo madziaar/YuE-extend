@@ -2,11 +2,14 @@ from typing import List
 
 import torch
 import torchaudio
+from omegaconf import OmegaConf
+
 # from encodec import EncodecModel
 from torch import nn
-from omegaconf import OmegaConf
 from vocos.modules import safe_log
+
 # from vocos.xcodec.models.soundstream_hubert_new import SoundStream
+
 
 class FeatureExtractor(nn.Module):
     """Base class for feature extractors."""
@@ -26,7 +29,14 @@ class FeatureExtractor(nn.Module):
 
 
 class MelSpectrogramFeatures(FeatureExtractor):
-    def __init__(self, sample_rate=24000, n_fft=1024, hop_length=256, n_mels=100, padding="center"):
+    def __init__(
+        self,
+        sample_rate=24000,
+        n_fft=1024,
+        hop_length=256,
+        n_mels=100,
+        padding="center",
+    ):
         super().__init__()
         if padding not in ["center", "same"]:
             raise ValueError("Padding must be 'center' or 'same'.")
@@ -71,15 +81,22 @@ class EncodecFeatures(FeatureExtractor):
         self.num_q = self.encodec.quantizer.get_num_quantizers_for_bandwidth(
             self.encodec.frame_rate, bandwidth=max(bandwidths)
         )
-        codebook_weights = torch.cat([vq.codebook for vq in self.encodec.quantizer.vq.layers[: self.num_q]], dim=0)
-        self.codebook_weights = torch.nn.Parameter(codebook_weights, requires_grad=train_codebooks)
+        codebook_weights = torch.cat(
+            [vq.codebook for vq in self.encodec.quantizer.vq.layers[: self.num_q]],
+            dim=0,
+        )
+        self.codebook_weights = torch.nn.Parameter(
+            codebook_weights, requires_grad=train_codebooks
+        )
         self.bandwidths = bandwidths
 
     @torch.no_grad()
     def get_encodec_codes(self, audio):
         audio = audio.unsqueeze(1)
         emb = self.encodec.encoder(audio)
-        codes = self.encodec.quantizer.encode(emb, self.encodec.frame_rate, self.encodec.bandwidth)
+        codes = self.encodec.quantizer.encode(
+            emb, self.encodec.frame_rate, self.encodec.bandwidth
+        )
         return codes
 
     def forward(self, audio: torch.Tensor, **kwargs):
@@ -92,11 +109,17 @@ class EncodecFeatures(FeatureExtractor):
         # Instead of summing in the loop, it stores subsequent VQ dictionaries in a single `self.codebook_weights`
         # with offsets given by the number of bins, and finally summed in a vectorized operation.
         offsets = torch.arange(
-            0, self.encodec.quantizer.bins * len(codes), self.encodec.quantizer.bins, device=audio.device
+            0,
+            self.encodec.quantizer.bins * len(codes),
+            self.encodec.quantizer.bins,
+            device=audio.device,
         )
         embeddings_idxs = codes + offsets.view(-1, 1, 1)
-        features = torch.nn.functional.embedding(embeddings_idxs, self.codebook_weights).sum(dim=0)
+        features = torch.nn.functional.embedding(
+            embeddings_idxs, self.codebook_weights
+        ).sum(dim=0)
         return features.transpose(1, 2)
+
 
 class xCodecFeatures(FeatureExtractor):
     def __init__(
@@ -107,11 +130,13 @@ class xCodecFeatures(FeatureExtractor):
         super().__init__()
         self.config = OmegaConf.load(config)
         self.model = eval(self.config.generator.name)(**self.config.generator.config)
-        parameter_dict = torch.load(ckpt, map_location='cpu')
-        self.model.load_state_dict(parameter_dict['codec_model'])
-        self.resampler = torchaudio.transforms.Resample(orig_freq=44100, new_freq=16000).to('cuda')
+        parameter_dict = torch.load(ckpt, map_location="cpu")
+        self.model.load_state_dict(parameter_dict["codec_model"])
+        self.resampler = torchaudio.transforms.Resample(
+            orig_freq=44100, new_freq=16000
+        ).to("cuda")
         self.model.eval()
-    
+
     def forward(self, audio: torch.Tensor):
         # resample audio from 44100 to 16000
         audio = self.resampler(audio)

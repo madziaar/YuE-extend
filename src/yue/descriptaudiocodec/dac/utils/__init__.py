@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import argbind
-from audiotools import ml
-
 import dac
+from audiotools import ml
 
 DAC = dac.model.DAC
 Accelerator = ml.Accelerator

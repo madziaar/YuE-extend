@@ -7,7 +7,6 @@
 
 import argparse
 import logging
-
 import os
 
 logging.basicConfig(
@@ -22,11 +21,10 @@ import random
 import numpy as np
 import torch
 import yaml
-from torch.utils.data import DataLoader
-
-from dataloader import ReprDataset, ReprCollater
+from dataloader import ReprCollater, ReprDataset
 from losses.repr_reconstruct_loss import ReprReconstructLoss
 from repcodec.RepCodec import RepCodec
+from torch.utils.data import DataLoader
 from trainer.autoencoder import Trainer
 
 
@@ -37,17 +35,17 @@ class TrainMain:
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         if not torch.cuda.is_available():
-            self.device = torch.device('cpu')
-            logger.info(f"device: cpu")
+            self.device = torch.device("cpu")
+            logger.info("device: cpu")
         else:
-            self.device = torch.device('cuda:0')  # only supports single gpu for now
-            logger.info(f"device: gpu")
+            self.device = torch.device("cuda:0")  # only supports single gpu for now
+            logger.info("device: gpu")
             torch.cuda.manual_seed_all(args.seed)
             if args.disable_cudnn == "False":
                 torch.backends.cudnn.benchmark = True
 
         # initialize config
-        with open(args.config, 'r') as f:
+        with open(args.config, "r") as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.config.update(vars(args))
 
@@ -72,8 +70,8 @@ class TrainMain:
         self.trainer = None
 
         # initialize batch_length
-        self.batch_length: int = self.config['batch_length']
-        self.data_path: str = self.config['data']['path']
+        self.batch_length: int = self.config["batch_length"]
+        self.data_path: str = self.config["data"]["path"]
 
     def initialize_data_loader(self):
         train_set = self._build_dataset("train")
@@ -93,14 +91,11 @@ class TrainMain:
         logger.info(f"Model Arch:\n{self.model['repcodec']}")
 
         # opt
-        optimizer_class = getattr(
-            torch.optim,
-            self.config["model_optimizer_type"]
-        )
+        optimizer_class = getattr(torch.optim, self.config["model_optimizer_type"])
         self.optimizer = {
             "repcodec": optimizer_class(
                 self.model["repcodec"].parameters(),
-                **self.config["model_optimizer_params"]
+                **self.config["model_optimizer_params"],
             )
         }
 
@@ -112,7 +107,7 @@ class TrainMain:
         self.scheduler = {
             "repcodec": scheduler_class(
                 optimizer=self.optimizer["repcodec"],
-                **self.config["model_scheduler_params"]
+                **self.config["model_scheduler_params"],
             )
         }
 
@@ -133,7 +128,7 @@ class TrainMain:
             optimizer=self.optimizer,
             scheduler=self.scheduler,
             config=self.config,
-            device=self.device
+            device=self.device,
         )
 
     def initialize_model(self):
@@ -157,20 +152,15 @@ class TrainMain:
                 self.trainer.run()
         finally:
             self.trainer.save_checkpoint(
-                os.path.join(self.config["outdir"], f"checkpoint-{self.trainer.steps}steps.pkl")
+                os.path.join(
+                    self.config["outdir"], f"checkpoint-{self.trainer.steps}steps.pkl"
+                )
             )
             logger.info(f"Successfully saved checkpoint @ {self.trainer.steps}steps.")
 
-    def _build_dataset(
-            self, subset: str
-    ) -> ReprDataset:
-        data_dir = os.path.join(
-            self.data_path, self.config['data']['subset'][subset]
-        )
-        params = {
-            "data_dir": data_dir,
-            "batch_len": self.batch_length
-        }
+    def _build_dataset(self, subset: str) -> ReprDataset:
+        data_dir = os.path.join(self.data_path, self.config["data"]["subset"][subset])
+        params = {"data_dir": data_dir, "batch_len": self.batch_length}
         return ReprDataset(**params)
 
     def _set_data_loader(self, dataset, collater):
@@ -197,22 +187,29 @@ class TrainMain:
 def train():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-c", "--config", type=str, required=True,
-        help="the path of config yaml file."
+        "-c", "--config", type=str, required=True, help="the path of config yaml file."
     )
     parser.add_argument(
-        "--tag", type=str, required=True,
-        help="the outputs will be saved to exp_root/tag/"
+        "--tag",
+        type=str,
+        required=True,
+        help="the outputs will be saved to exp_root/tag/",
     )
+    parser.add_argument("--exp_root", type=str, default="exp")
     parser.add_argument(
-        "--exp_root", type=str, default="exp"
-    )
-    parser.add_argument(
-        "--resume", default="", type=str, nargs="?",
+        "--resume",
+        default="",
+        type=str,
+        nargs="?",
         help='checkpoint file path to resume training. (default="")',
     )
     parser.add_argument("--seed", default=1337, type=int)
-    parser.add_argument("--disable_cudnn", choices=("True", "False"), default="False", help="Disable CUDNN")
+    parser.add_argument(
+        "--disable_cudnn",
+        choices=("True", "False"),
+        default="False",
+        help="Disable CUDNN",
+    )
     args = parser.parse_args()
 
     train_main = TrainMain(args)
@@ -224,5 +221,5 @@ def train():
     train_main.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     train()
