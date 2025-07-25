@@ -55,21 +55,32 @@ setup_git_lfs() {
 # Upgrade pip and install core packages
 setup_pip() {
     log_info "Upgrading pip and installing core packages..."
-    python3 -m pip install --upgrade pip setuptools wheel
-    log_success "Core pip packages upgraded"
+    # Try to upgrade pip, but don't fail if system packages conflict
+    python3 -m pip install --upgrade --user pip || {
+        log_warning "Could not upgrade pip (system package conflicts), continuing..."
+    }
+    
+    # Try to install/upgrade setuptools and wheel with --user to avoid conflicts
+    python3 -m pip install --user setuptools wheel || {
+        log_warning "Could not install setuptools/wheel, continuing with system versions..."
+    }
+    
+    log_success "Pip setup completed"
 }
 
 # Install Python dependencies with better error handling
 install_python_deps() {
     log_info "Installing Python dependencies from requirements.txt..."
     if [[ -f "requirements.txt" ]]; then
-        # Use pip-tools if available for better dependency resolution
-        if python3 -m pip install pip-tools &> /dev/null; then
-            python3 -m pip install -r requirements.txt --upgrade
-        else
-            python3 -m pip install -r requirements.txt
-        fi
-        log_success "Python dependencies installed successfully"
+        # Install requirements with --user to avoid system conflicts
+        python3 -m pip install --user -r requirements.txt || {
+            log_warning "Some dependencies failed to install, trying without --user flag..."
+            python3 -m pip install -r requirements.txt || {
+                log_error "Failed to install dependencies from requirements.txt"
+                log_info "You may need to install some dependencies manually"
+            }
+        }
+        log_success "Python dependencies installation completed"
     else
         log_warning "requirements.txt not found, skipping Python dependencies"
     fi
@@ -79,17 +90,27 @@ install_python_deps() {
 install_dev_tools() {
     log_info "Installing development tools..."
     
-    # Install formatting and linting tools with specific versions for consistency
-    python3 -m pip install \
-        black>=24.0.0 \
-        isort>=5.12.0 \
-        ruff>=0.1.0 \
-        mypy>=1.0.0 \
-        pre-commit>=3.0.0 \
-        pytest>=7.0.0 \
-        pytest-cov>=4.0.0
+    # Install formatting and linting tools, trying --user first to avoid conflicts
+    dev_tools=(
+        "black>=24.0.0"
+        "isort>=5.12.0" 
+        "ruff>=0.1.0"
+        "mypy>=1.0.0"
+        "pre-commit>=3.0.0"
+        "pytest>=7.0.0"
+        "pytest-cov>=4.0.0"
+    )
     
-    log_success "Development tools installed successfully"
+    for tool in "${dev_tools[@]}"; do
+        python3 -m pip install --user "$tool" || {
+            log_warning "Failed to install $tool with --user, trying system install..."
+            python3 -m pip install "$tool" || {
+                log_warning "Failed to install $tool, skipping..."
+            }
+        }
+    done
+    
+    log_success "Development tools installation completed"
 }
 
 # Create development configuration files

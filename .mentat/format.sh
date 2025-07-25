@@ -98,13 +98,34 @@ ensure_tools() {
     fi
 }
 
-# Build exclude arguments for tools
-build_exclude_args() {
-    local exclude_args=""
+# Build exclude arguments for isort (uses different format)
+build_isort_exclude_args() {
+    local exclude_patterns=""
     for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-        exclude_args="$exclude_args --exclude $pattern"
+        if [[ -n "$exclude_patterns" ]]; then
+            exclude_patterns="$exclude_patterns,$pattern"
+        else
+            exclude_patterns="$pattern"
+        fi
     done
-    echo "$exclude_args"
+    if [[ -n "$exclude_patterns" ]]; then
+        echo "--skip-glob $exclude_patterns"
+    fi
+}
+
+# Build exclude arguments for ruff
+build_ruff_exclude_args() {
+    local exclude_patterns=""
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+        if [[ -n "$exclude_patterns" ]]; then
+            exclude_patterns="$exclude_patterns,$pattern"
+        else
+            exclude_patterns="$pattern"
+        fi
+    done
+    if [[ -n "$exclude_patterns" ]]; then
+        echo "--exclude $exclude_patterns"
+    fi
 }
 
 # Format imports with isort
@@ -112,7 +133,7 @@ format_imports() {
     log_info "Sorting imports with isort..."
     
     local cmd="isort"
-    local exclude_args=$(build_exclude_args)
+    local exclude_args=$(build_isort_exclude_args)
     
     if [[ "$DRY_RUN" == "true" ]]; then
         cmd="$cmd --check-only --diff"
@@ -127,14 +148,25 @@ format_imports() {
         cmd="$cmd --settings-path=pyproject.toml"
     fi
     
-    eval "$cmd $exclude_args ." || {
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_warning "Import sorting issues found (dry-run mode)"
-        else
-            log_error "Failed to sort imports"
-            return 1
-        fi
-    }
+    if [[ -n "$exclude_args" ]]; then
+        eval "$cmd $exclude_args ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Import sorting issues found (dry-run mode)"
+            else
+                log_error "Failed to sort imports"
+                return 1
+            fi
+        }
+    else
+        eval "$cmd ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Import sorting issues found (dry-run mode)"
+            else
+                log_error "Failed to sort imports"
+                return 1
+            fi
+        }
+    fi
     
     log_success "Import sorting completed"
 }
@@ -183,7 +215,7 @@ format_code() {
 lint_and_fix() {
     log_info "Linting and fixing with ruff..."
     
-    local exclude_args=$(build_exclude_args)
+    local exclude_args=$(build_ruff_exclude_args)
     
     # First, run ruff check with fixes
     local check_cmd="ruff check"
@@ -195,9 +227,15 @@ lint_and_fix() {
         check_cmd="$check_cmd --verbose"
     fi
     
-    eval "$check_cmd $exclude_args ." || {
-        log_warning "Some linting issues found (may not be auto-fixable)"
-    }
+    if [[ -n "$exclude_args" ]]; then
+        eval "$check_cmd $exclude_args ." || {
+            log_warning "Some linting issues found (may not be auto-fixable)"
+        }
+    else
+        eval "$check_cmd ." || {
+            log_warning "Some linting issues found (may not be auto-fixable)"
+        }
+    fi
     
     # Then run ruff format
     local format_cmd="ruff format"
@@ -205,14 +243,25 @@ lint_and_fix() {
         format_cmd="$format_cmd --check --diff"
     fi
     
-    eval "$format_cmd $exclude_args ." || {
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_warning "Ruff formatting issues found (dry-run mode)"
-        else
-            log_error "Failed to format with ruff"
-            return 1
-        fi
-    }
+    if [[ -n "$exclude_args" ]]; then
+        eval "$format_cmd $exclude_args ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Ruff formatting issues found (dry-run mode)"
+            else
+                log_error "Failed to format with ruff"
+                return 1
+            fi
+        }
+    else
+        eval "$format_cmd ." || {
+            if [[ "$DRY_RUN" == "true" ]]; then
+                log_warning "Ruff formatting issues found (dry-run mode)"
+            else
+                log_error "Failed to format with ruff"
+                return 1
+            fi
+        }
+    fi
     
     log_success "Linting and formatting with ruff completed"
 }
